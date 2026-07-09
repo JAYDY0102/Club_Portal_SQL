@@ -1,7 +1,34 @@
 <?php
 session_start();
-$loggedIn = isset($_SESSION['user']);
-$user = $_SESSION['user'];
+
+$secret = require __DIR__ . '/auth/secret.php';
+$SignedIn = isset($_SESSION['user']);
+$user = $_SESSION['user'] ?? null;
+
+$host = $secret['host'];
+$username = $secret['username'];
+$password = $secret['password'];
+$dbname = $secret['dbname'];
+
+$role = null;
+$admin = null;
+
+$conn = new mysqli($host, $username, $password, $dbname);
+if ($conn->connect_error) {
+    http_response_code(500);
+    exit('Database connection failed.');
+}
+
+if($SignedIn){
+    $email = $user['Email'];
+    $stmt = $conn->prepare("SELECT Role, AdminFlag FROM users WHERE Email = ?");
+    $stmt->bind_param("s", $email);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $row = $result->fetch_assoc();
+    $role = $row['Role'];
+    $admin = $row['AdminFlag'];
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -10,9 +37,6 @@ $user = $_SESSION['user'];
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tiger Clubs Portal</title>
     <link rel="stylesheet" href="styles.css"/>
-    <script>
-        const isLoggedIn = <?= json_encode($loggedIn) ?>;
-    </script>
 </head>
 <body>
 <div id="top-nav-bar" class="classic">
@@ -22,16 +46,16 @@ $user = $_SESSION['user'];
         </a>
         <nav class="tnb-desktop-nav sis-bar-item">
             <a id="active" href="index.php" class="sis-bar-item sis-padding-16 sis-button ">Home</a>
-            <?php if ($loggedIn): ?>
+            <?php if ($SignedIn): ?>
                 <a id="inactive" href="feed" class="sis-bar-item  sis-padding-16 sis-button">Feed</a>
                 <a id="inactive" href="calendar" class="sis-bar-item sis-padding-16 sis-button">Calendar</a>
-                <?php if ($user['role'] == 'admin'): ?>
+                <?php if ($admin == '1'): ?>
                     <a id="inactive" href="dashboard/admin.php" class="sis-bar-item sis-padding-16 sis-button">Admin
                         Dashboard</a>
-                <?php elseif ($user['role'] == 'advisor'): ?>
+                <?php elseif ($role == 'advisor'): ?>
                     <a id="inactive" href="dashboard/advisor.php" class="sis-bar-item sis-padding-16 sis-button">Advisor
                         Dashboard</a>
-                <?php elseif ($user['role'] == 'executive'): ?>
+                <?php elseif ($role == 'executive'): ?>
                     <a id="inactive" href="dashboard/executive.php" class="sis-bar-item sis-padding-16 sis-button">Executive
                         Dashboard</a>
                 <?php else: ?>
@@ -48,23 +72,28 @@ $user = $_SESSION['user'];
             <?php endif; ?>
         </nav>
         <div class="tnb-right-section">
-            <?php if ($loggedIn): ?>
-                <div id="tnb-login-btn" class="tnb-login-btn sis-bar-item sis-right sis-button"
+            <?php if ($SignedIn): ?>
+            <a href="auth/signout.php">
+                <div id="tnb-sign-btn" class="tnb-sign-btn sis-bar-item sis-right sis-button"
                      title="Sign in to your account">
                     <span class="button-text">Sign Out</span>
                 </div>
+            </a>
             <?php else: ?>
-                <div id="tnb-login-btn" class="tnb-login-btn sis-bar-item sis-right sis-button"
+            <a href="auth/signin.php">
+                <div id="tnb-sign-btn" class="tnb-sign-btn sis-bar-item sis-right sis-button"
                      title="Sign in to your account">
                     <span class="button-text">Sign In</span>
                 </div>
+            </a>
             <?php endif; ?>
+            <a href="assets/site_images/fair_map.png" class="tnb-right-side-btn sis-bar-item sis-button sis-right" title="Club Fair Map" aria-label="Club Fair Map">Fair Map</a>
         </div>
     </div>
 </div>
 <div class="topnavbackground"></div>
 <div class="topnavcontainer">
-    <img src="assets/banners/abc_teachers.png"
+    Placeholder for announcements
 </div>
 <div class="background-image"></div>
 <div class="contentcontainer">
@@ -72,7 +101,7 @@ $user = $_SESSION['user'];
         <div class="sis-main" id="main">
             <div class="main-banner">
                 <div class="banner-text">
-                    <h1>Discover Clubs <span>at SIS</span></h1>
+                    <h1>Discover Clubs at SIS</h1>
                     <p>Find your passion, make lasting memories, and develop new skills through our diverse range of student clubs.</p>
                 </div>
             </div>
@@ -104,16 +133,6 @@ $user = $_SESSION['user'];
                 <div class="layout">
                     <section class="grid" id="clubGrid">
                         <?php
-                        $servername = "localhost";
-                        $username = "club_user";
-                        $password = "club_password_123";
-                        $dbname = "tiger_clubs";
-
-                        $conn = new mysqli($servername, $username, $password, $dbname);
-                        if ($conn->connect_error) {
-                            die("Connection failed: " . $conn->connect_error);
-                        }
-
                         $sql = "SELECT DirName, Name, ClubType, MemberCount, MeetDay, Summary FROM clubs";
                         $result = $conn->query($sql);
                         if (!$result) {
@@ -142,9 +161,9 @@ $user = $_SESSION['user'];
     <div class='card-content'>
         <div class='card-meta'>
             <h3>" . $row["Name"] . "</h3>
-            <h3>" . $row["MemberCount"] . " Members</h3>
+            <!--<h3 id='count'>" . $row["MemberCount"] . " Members</h3>-->
         </div>
-        <p class='card-summary'>" . $row["Summary"] . "</p>
+        <div class='card-summary'>" . $row["Summary"] . "</div>
     </div>
 </article>";
                             }
