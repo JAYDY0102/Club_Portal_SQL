@@ -133,7 +133,7 @@ if($SignedIn){
                 <div class="layout">
                     <section class="grid" id="clubGrid">
                         <?php
-                        $sql = "SELECT DirName, Name, ClubType, MemberCount, MeetDay, Summary FROM clubs";
+                        $sql = "SELECT DirName, Name, ClubType, MemberCount, MeetDay, Summary FROM clubs ORDER BY Name ASC";
                         $result = $conn->query($sql);
                         if (!$result) {
                             die("Query failed: " . $conn->error);

@@ -45,47 +45,20 @@ $staffUrl = buildGoogleAuthUrl(
         </a>
         <nav class="tnb-desktop-nav sis-bar-item">
             <a id="inactive" href="../index.php" class="sis-bar-item sis-padding-16 sis-button ">Home</a>
-            <?php if ($SignedIn): ?>
-                <a id="inactive" href="../feed" class="sis-bar-item  sis-padding-16 sis-button">Feed</a>
-                <a id="inactive" href="../calendar" class="sis-bar-item sis-padding-16 sis-button">Calendar</a>
-                <?php if ($user['role'] == 'admin'): ?>
-                    <a id="inactive" href="../dashboard/admin.php" class="sis-bar-item sis-padding-16 sis-button">Admin
-                        Dashboard</a>
-                <?php elseif ($user['role'] == 'advisor'): ?>
-                    <a id="inactive" href="../dashboard/advisor.php" class="sis-bar-item sis-padding-16 sis-button">Advisor
-                        Dashboard</a>
-                <?php elseif ($user['role'] == 'executive'): ?>
-                    <a id="inactive" href="../dashboard/executive.php" class="sis-bar-item sis-padding-16 sis-button">Executive
-                        Dashboard</a>
-                <?php else: ?>
-                    <a id="inactive" onClick="alert('You do not have permissions to use the Dashboard')"
-                       class="sis-bar-item sis-padding-16 sis-button">Dashboard</a>
-                <?php endif; ?>
-            <?php else: ?>
-                <a id="inactive" onClick="alert('You do not have permissions to use the Feed')"
-                   class="sis-bar-item sis-padding-16 sis-button">Feed</a>
-                <a id="inactive" onClick="alert('You do not have permissions to use the Calendar')"
-                   class="sis-bar-item sis-padding-16 sis-button ">Calendar</a>
-                <a id="inactive" onClick="alert('You do not have permissions to use the Dashboard')"
-                   class="sis-bar-item sis-padding-16 sis-button">Dashboard</a>
-            <?php endif; ?>
+            <a id="inactive" onClick="alert('You do not have permissions to use the Feed')"
+               class="sis-bar-item sis-padding-16 sis-button">Feed</a>
+            <a id="inactive" onClick="alert('You do not have permissions to use the Calendar')"
+               class="sis-bar-item sis-padding-16 sis-button ">Calendar</a>
+            <a id="inactive" onClick="alert('You do not have permissions to use the Dashboard')"
+               class="sis-bar-item sis-padding-16 sis-button">Dashboard</a>
         </nav>
         <div class="tnb-right-section">
-            <?php if ($SignedIn): ?>
-                <a href="signout.php">
-                    <div id="tnb-sign-btn" class="tnb-sign-btn sis-bar-item sis-right sis-button"
-                         title="Sign in to your account">
-                        <span class="button-text">Sign Out</span>
-                    </div>
-                </a>
-            <?php else: ?>
-                <a href="signin.php">
-                    <div id="tnb-sign-btn" class="tnb-sign-btn sis-bar-item sis-right sis-button"
-                         title="Sign in to your account">
-                        <span class="button-text">Sign In</span>
-                    </div>
-                </a>
-            <?php endif; ?>
+            <a href="signin.php">
+                <div id="tnb-sign-btn" class="tnb-sign-btn sis-bar-item sis-right sis-button"
+                     title="Sign in to your account">
+                    <span class="button-text">Sign In</span>
+                </div>
+            </a>
             <a href="../assets/site_images/fair_map.png" class="tnb-right-side-btn sis-bar-item sis-button sis-right" title="Club Fair Map" aria-label="Club Fair Map">Fair Map</a>
         </div>
     </div>

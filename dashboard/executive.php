@@ -52,5 +52,17 @@ if ($conn->connect_error) {
     Placeholder for announcements
 </div>
 <div class="background-image"></div>
+<div class="contentcontainer">
+    <div class="belowtopnavcontainer">
+        <div class="sis-main" id="main">
+            <div class="content">
+                <div class="section-head">
+                    <h2>Executive Dashboard</h2>
+                    <p>Manage your clubs</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 </body>
 </html>

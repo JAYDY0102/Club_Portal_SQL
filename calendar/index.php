@@ -75,3 +75,8 @@ $admin = $row['AdminFlag'];
     Placeholder for announcements
 </div>
 <div class="background-image"></div>
+<div class="contentcontainer">
+
+</div>
+</body>
+</html>
