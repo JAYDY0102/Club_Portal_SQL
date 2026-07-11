@@ -20,6 +20,8 @@ A Google Cloud project is required to set up the Google Oauth. While I believe u
 6. Click on "Create client".
 7. Fill in the form. Select "Web application" for the application type. For the authorization JavaScript origins, add "https://tigerclubs.org" and for the redirect URIs, add "https://tigerclubs.org/auth/callback.php". Click "Create".
 8. Once pressing "Create", you will be shown a client ID and client secret. Copy them and keep them for now.
+9. From the left sidebar, select "Audience".
+10. Publish the app. 
 
 ## Setting up the Google Oauth in the Coding Club website
 1. Open the secret_modify.php file in the auth/ directory.

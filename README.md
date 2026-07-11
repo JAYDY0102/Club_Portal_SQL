@@ -13,6 +13,7 @@ A revised and improved version of SIS's club portal. Revised to run mostly on SQ
 ## Documentation
 - [General Documentation](https://docs.google.com/document/d/1OUWDLhOaK6GCYXpYlEebaH7BezBv5snpdQzy2XnBOj0/edit?usp=sharing)
 - [SQL Setup Documentation](assets/other/SQL_Setup.md)
+- [Google OAuth Setup](assets/other/Google_Oauth_Setup.md)
 
 This is the general documentation re-written more clearly compared to the Google doc version. 
 Since this is merely an attempt to clarify the documentation, if anything is unclear, please feel free to contact me. [Contact](#contact)
@@ -52,7 +53,7 @@ For the database structure, refer to the [SQL Setup Documentation](assets/other/
 Currently, I've built the site to run on Google OAuth 2.0. Here is a brief description of how it works:
 1. (User is in /auth/signin.php) User clicks the login button.
 2. The redirecting URL is built using PHP. The Google documentation of how to build the URL can be found [here](https://developers.google.com/identity/protocols/oauth2/web-server).
-3. After the user signs in with Google, they are redirected to the callback.php file. [Detailed information here](assets/other/Google_Oauth_Setup.md)
+3. After the user signs in with Google, they are redirected to the callback.php file. [Detailed information here](assets/other/Google_Oauth_Setup.md).
 4. The callback.php checks if the user already exists in the database, and if not, registers the user to the SQL user table.
 5. Callback.php redirects the user to the main page after setting the PHP session variables.
 ### Index.php
