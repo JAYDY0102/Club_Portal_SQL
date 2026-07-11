@@ -29,7 +29,7 @@ html/
   │   │   └── sis_logo.ttf
   │   ├── other/
   │   ├── site_images/
-  │   │   └── All site images in png format.
+  │   │   └── All site images.
   ├── auth/
   │   ├── callback.php
   │   ├── secret.php
