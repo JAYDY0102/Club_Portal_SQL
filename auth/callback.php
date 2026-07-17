@@ -90,7 +90,10 @@ $stmt->bind_param("s", $email);
 $stmt->execute();
 $result = $stmt->get_result();
 $user = $result->fetch_assoc();
+$stmt->close();
 if (!$user) {
+    error_log("About to insert user: Email=$email, Name=$name");
+
     $insertStmt = $conn->prepare("INSERT INTO users (Email, Name, UserName) VALUES (?, ?, ?)");
     if (!$insertStmt) {
         http_response_code(500);
@@ -100,7 +103,7 @@ if (!$user) {
     $insertStmt->bind_param("sss", $email, $name, $name);
     if (!$insertStmt->execute()) {
         http_response_code(500);
-        exit('Failed to create user account.');
+        exit('Failed to create user account: ' . $conn->error);
     }
     $insertStmt->close();
 }
