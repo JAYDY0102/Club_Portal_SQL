@@ -166,11 +166,16 @@ if($SignedIn){
                                     $cycleAdvisor--;
                                     if ($advisor !== '') {
                                         $sqlAdvisor = "SELECT Name FROM users WHERE Email = '$advisor'";
-                                        $resultAdvisor = $conn->query($sqlAdvisor);
-                                        if ($cycleAdvisor === 0) {
-                                            $AdvisorsList .= $resultAdvisor->fetch_assoc()['Name'];
+                                        $AdvisorResult = $conn->query($sqlAdvisor);
+                                        if ($AdvisorResult && ($advisorRow = $AdvisorResult->fetch_assoc())) {
+                                            $resultAdvisor = $advisorRow['Name'];
                                         } else {
-                                            $AdvisorsList .= $resultAdvisor->fetch_assoc()['Name'] . ', ';
+                                            $resultAdvisor = 'Unregistered Advisor';
+                                        }
+                                        if ($cycleAdvisor === 0) {
+                                            $AdvisorsList .= $resultAdvisor;
+                                        } else {
+                                            $AdvisorsList .= $resultAdvisor . ', ';
                                         }
                                     }
                                 }
@@ -180,11 +185,16 @@ if($SignedIn){
                                     $cycleExecutive--;
                                     if ($executive !== '') {
                                         $sqlExecutive = "SELECT Name FROM users WHERE Email = '$executive'";
-                                        $resultExecutive = $conn->query($sqlExecutive);
-                                        if ($cycleExecutive === 0) {
-                                            $ExecutivesList .= $resultExecutive->fetch_assoc()['Name'];
+                                        $ExecutiveResult = $conn->query($sqlExecutive);
+                                        if ($ExecutiveResult && ($executiveRow = $ExecutiveResult->fetch_assoc())) {
+                                            $resultExecutive = $executiveRow['Name'];
                                         } else {
-                                            $ExecutivesList .= $resultExecutive->fetch_assoc()['Name'] . ', ';
+                                            $resultExecutive = 'Unregistered Executive';
+                                        }
+                                        if ($cycleExecutive === 0) {
+                                            $ExecutivesList .= $resultExecutive;
+                                        } else {
+                                            $ExecutivesList .= $resultExecutive . ', ';
                                         }
                                     }
                                 }
