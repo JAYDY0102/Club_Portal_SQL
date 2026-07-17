@@ -97,7 +97,16 @@ $admin = $row['AdminFlag'];
                     <a href="https://forms.gle/KFqJG2EHqEsWUuB47" title="Submit a bug report that you have encountered on the website">BUG REPORT</a>
                 </div>
                 <div class="footerlinks_1">
-                    <a href="" title="Contact Us!">CONTACT US</a>
+                    <?php
+                    $sqlContact = "SELECT Executives FROM clubs WHERE DirName='coding_club'";
+                    $resultContact = $conn->query($sqlContact);
+                    $ExecutivesContacts = $resultContact->fetch_assoc()['Executives'];
+                    $ExecutivesContactList = array_map('trim', explode(',', $ExecutivesContacts));
+                    $PresidentContact = $ExecutivesContactList[0];
+                    echo
+                    "<a href='mailto:$PresidentContact' title='Contact Us!'>CONTACT US</a>";
+                    $conn->close();
+                    ?>
                 </div>
             </div>
             <div class="footertext">
