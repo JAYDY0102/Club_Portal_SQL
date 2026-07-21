@@ -257,6 +257,72 @@ body {
     z-index: 3;
 }
 
+.subtopnav {
+    position: fixed;
+    background-color: var(--primary-black);
+    color: var(--primary-white);
+    padding: 0;
+    letter-spacing: 1px;
+    font-family: unified, sans-serif;
+    font-size: 0;
+    z-index: 2;
+    width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    scrollbar-width: none;
+    max-width: 1750px;
+}
+
+.scroll-left-btn {
+    z-index: 2;
+    display: block;
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 33px;
+    width: 66px;
+    background: linear-gradient(to right, var(--primary-black) 70%, transparent 100%);
+}
+
+.scroll-right-btn {
+    z-index: 2;
+    display: block;
+    position: absolute;
+    right: 0;
+    top: 0;
+    height: 33px;
+    width: 66px;
+    background: linear-gradient(to left, var(--primary-black) 70%, transparent 100%);
+}
+
+.announcement-track {
+    display: inline-flex;
+    gap: 30px;
+    align-items: center;
+    width: max-content;
+    animation: announcement-scroll 18s linear infinite;
+}
+
+.announcement-track a {
+    display: inline-block;
+    padding: 5px !important;
+    font-size: 15px !important;
+    text-decoration: none;
+    line-height: 1.5;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+@keyframes announcement-scroll {
+    from {
+        transform: translateX(0);
+    }
+
+    to {
+        transform: translateX(-25%);
+    }
+}
+
 .background-image {
     top: 89px;
     position: fixed;

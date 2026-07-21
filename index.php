@@ -33,6 +33,7 @@ if($SignedIn){
     $row = $result->fetch_assoc();
     $role = $row['Role'];
     $admin = $row['AdminFlag'];
+    echo "<script>console.log('User role: $role, AdminFlag: $admin');</script>";
 }
 ?>
 <!DOCTYPE html>
@@ -98,7 +99,34 @@ if($SignedIn){
 </div>
 <div class="topnavbackground"></div>
 <div class="topnavcontainer">
-    Placeholder for announcements
+    <div class="subtopnav">
+        <div class="scroll-left-btn"></div>
+        <div class="scroll-right-btn"></div>
+        <?php
+            $sql = "SELECT Announcement FROM announcements";
+            $result = $conn->query($sql);
+            $announcements = [];
+
+            while ($row = $result->fetch_assoc()) {
+                if (trim($row['Announcement']) !== '') {
+                    $announcements[] = $row['Announcement'];
+                }
+            }
+
+            $totalLength = strlen(implode('', $announcements));
+            $repeatCount = max(2, ceil(200 / max($totalLength, 1)));
+
+            echo "<div class='announcement-track'>";
+
+            for ($i = 0; $i < $repeatCount * 2; $i++) {
+                foreach ($announcements as $announcement) {
+                    echo "<a>" . e($announcement) . "</a>";
+                }
+            }
+
+            echo "</div>";
+        ?>
+    </div>
 </div>
 <div class="background-image"></div>
 <div class="contentcontainer">
@@ -117,22 +145,22 @@ if($SignedIn){
                 </div>
                 <div class="filters">
                     <div class="filter-row">
-                        <button class="chip active" data-filter="all">All</button>
-                        <button class="chip" data-filter="STEM">STEM</button>
-                        <button class="chip" data-filter="Academic">Academic</button>
-                        <button class="chip" data-filter="Arts & Culture">Arts & Culture</button>
-                        <button class="chip" data-filter="Community Service">Community Service</button>
-                        <button class="chip" data-filter="Journalism">Journalism</button>
-                        <button class="chip" data-filter="Sports">Sports</button>
+                        <button class="type-filter chip active" data-filter="all">All</button>
+                        <button class="type-filter chip" data-filter="STEM">STEM</button>
+                        <button class="type-filter chip" data-filter="Academic">Academic</button>
+                        <button class="type-filter chip" data-filter="Arts & Culture">Arts & Culture</button>
+                        <button class="type-filter chip" data-filter="Community Service">Community Service</button>
+                        <button class="type-filter chip" data-filter="Journalism">Journalism</button>
+                        <button class="type-filter chip" data-filter="Sports">Sports</button>
                     </div>
                     <div class="filter-row">
-                        <button class="chip active" data-filter="all">All Days</button>
-                        <button class="chip" data-filter="Monday">Monday</button>
-                        <button class="chip" data-filter="Wednesday">Wednesday</button>
-                        <button class="chip" data-filter="Thursday (A)">Thursday (A)</button>
-                        <button class="chip" data-filter="Thursday (B)">Thursday (B)</button>
-                        <button class="chip" data-filter="Friday">Friday</button>
-                        <button class="chip" data-filter="Other">Other</button>
+                        <button class="day-filter chip active" data-filter="all">All Days</button>
+                        <button class="day-filter chip" data-filter="Monday">Monday</button>
+                        <button class="day-filter chip" data-filter="Wednesday">Wednesday</button>
+                        <button class="day-filter chip" data-filter="Thursday A">Thursday (A)</button>
+                        <button class="day-filter chip" data-filter="Thursday B">Thursday (B)</button>
+                        <button class="day-filter chip" data-filter="Friday">Friday</button>
+                        <button class="day-filter chip" data-filter="Other">Other</button>
                     </div>
                 </div>
                 <div class="layout">
@@ -206,7 +234,7 @@ if($SignedIn){
                                 data-member-count='" . e($row["MemberCount"]) . "'
                                 data-meet-day='" . e($row["MeetDay"]) . "'
                                 data-location='" . e($row["Location"]) . "'
-                                data-about='" . e($row["about"]) . "'
+                                data-about='" . e($row["About"]) . "'
                                 data-instagram='" . e($row["Instagram"]) . "'
                                 data-youtube='" . e($row["Youtube"]) . "'
                                 data-website='" . e($row["Website"]) . "'
@@ -297,6 +325,11 @@ if($SignedIn){
     const layout = document.querySelector(".layout");
     const drawer = document.querySelector('.drawer');
     const clubCards = document.querySelectorAll('.card');
+    const typeFilter = document.querySelectorAll('.type-filter');
+    const dayFilter = document.querySelectorAll('.day-filter');
+
+    let dayFilterActive = 'all';
+    let typeFilterActive = 'all';
 
     function makeLink(url, text) {
         return `<a href="${url}" target="_blank">${text}</a>`;
@@ -307,6 +340,26 @@ if($SignedIn){
             layout.classList.remove('drawer-open');
         }
     });
+
+    typeFilter.forEach(filter => {
+        filter.addEventListener('click', () => {
+            const filterValue = filter.getAttribute('data-filter');
+            typeFilter.forEach(f => f.classList.remove('active'));
+            filter.classList.add('active');
+            typeFilterActive = filterValue;
+            filterCards()
+        })
+    })
+
+    dayFilter.forEach(filter => {
+        filter.addEventListener('click', () => {
+            const filterValue = filter.getAttribute('data-filter');
+            dayFilter.forEach(f => f.classList.remove('active'));
+            filter.classList.add('active');
+            dayFilterActive = filterValue;
+            filterCards()
+        })
+    })
 
     clubCards.forEach(card => {
         card.addEventListener('click', () => {
@@ -424,5 +477,18 @@ if($SignedIn){
             layout.classList.add("drawer-open");
         })
     })
-
+    function filterCards() {
+        clubCards.forEach(card => {
+            const clubType = card.getAttribute('data-club-type');
+            const meetDay = card.getAttribute('data-meet-day');
+            if (
+                (typeFilterActive === 'all' || clubType.includes(typeFilterActive)) &&
+                (dayFilterActive === 'all' || meetDay.includes(dayFilterActive))
+            ) {
+                card.style.display = 'block';
+            } else {
+                card.style.display = 'none';
+            }
+        })
+    }
 </script>

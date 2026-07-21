@@ -44,6 +44,7 @@ html/
   ├── feed/
   │   └── index.php
   ├── index.php
+  ├── post.php
   └── style.css
 ```
 For secret.php, modify the secret_modify.php file to include the Google client ID and secret, then rename it to secret.php. This is to prevent the Google client ID and secret from being exposed in the repository.

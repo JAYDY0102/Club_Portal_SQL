@@ -21,7 +21,17 @@ function e($value): string
     return htmlspecialchars(($value ?? ''), ENT_QUOTES, 'UTF-8');
 }
 
-if (!$SignedIn) {
+if ($SignedIn) {
+    $email = $user['Email'];
+    $stmt = $conn->prepare("SELECT AdminFlag FROM users WHERE Email='$email'");
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $row = $result->fetch_assoc();
+    $role = $row['AdminFlag'];
+    if ($role != 1) {
+        header('Location: ../index.php');
+    }
+} else {
     header('Location: ../index.php');
 }
 ?>
@@ -58,7 +68,34 @@ if (!$SignedIn) {
 </div>
 <div class="topnavbackground"></div>
 <div class="topnavcontainer">
-    Placeholder for announcements
+    <div class="subtopnav">
+        <div class="scroll-left-btn"></div>
+        <div class="scroll-right-btn"></div>
+        <?php
+        $sql = "SELECT Announcement FROM announcements";
+        $result = $conn->query($sql);
+        $announcements = [];
+
+        while ($row = $result->fetch_assoc()) {
+            if (trim($row['Announcement']) !== '') {
+                $announcements[] = $row['Announcement'];
+            }
+        }
+
+        $totalLength = strlen(implode('', $announcements));
+        $repeatCount = max(2, ceil(200 / max($totalLength, 1)));
+
+        echo "<div class='announcement-track'>";
+
+        for ($i = 0; $i < $repeatCount * 2; $i++) {
+            foreach ($announcements as $announcement) {
+                echo "<a>" . e($announcement) . "</a>";
+            }
+        }
+
+        echo "</div>";
+        ?>
+    </div>
 </div>
 <div class="background-image"></div>
 <div class="contentcontainer">
@@ -119,7 +156,7 @@ if (!$SignedIn) {
                             <div class="form-grid">
                                 <label for="club-name">Club Name</label>
                                 <input id="club-name" type="text" class="form-input" placeholder="Club Name">
-                                <label for="club-type">Club Type(s) – Separate by comma with spaces</label>
+                                <label for="club-type">Club Type(s) – Separate by comma w/o spaces</label>
                                 <input id="club-type" class="form-input" placeholder="Club Types">
                             </div>
                         </div>
@@ -153,9 +190,9 @@ if (!$SignedIn) {
                         <div class="form-group see-thru">
                             <div class="form-group-title">Contact Information</div>
                             <div class="form-grid">
-                                <label for="club-advisors">Advisor Email(s) – Separate by comma with spaces</label>
+                                <label for="club-advisors">Advisor Email(s) – Separate by comma w/o spaces</label>
                                 <input id="club-advisors" type="text" class="form-input">
-                                <label for="club-executives">Executive Emails – Separate by comma with spaces</label>
+                                <label for="club-executives">Executive Emails – Separate by comma w/o spaces</label>
                                 <input id="club-executives" type="text" class="form-input">
                                 <label for="club-instagram">Instagram Handle – Exclude the @ symbol</label>
                                 <input id="club-instagram" type="text" class="form-input" placeholder="sis_tigers">
@@ -293,7 +330,7 @@ if (!$SignedIn) {
             websiteInput.value = '';
             socialInput.value = '';
         } else {
-            formData = new FormData();
+            const formData = new FormData();
             formData.append('RequestType', 'club-delete')
             formData.append('DirName', DirName);
             try {

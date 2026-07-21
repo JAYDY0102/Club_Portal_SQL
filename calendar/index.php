@@ -12,7 +12,10 @@ $dbname = $secret['dbname'];
 
 $role = null;
 $admin = null;
-
+function e($value): string
+{
+    return htmlspecialchars(($value ?? ''), ENT_QUOTES, 'UTF-8');
+}
 $conn = new mysqli($host, $username, $password, $dbname);
 if ($conn->connect_error) {
     http_response_code(500);
@@ -77,7 +80,34 @@ if (!$SignedIn) {
 </div>
 <div class="topnavbackground"></div>
 <div class="topnavcontainer">
-    Placeholder for announcements
+    <div class="subtopnav">
+        <div class="scroll-left-btn"></div>
+        <div class="scroll-right-btn"></div>
+        <?php
+        $sql = "SELECT Announcement FROM announcements";
+        $result = $conn->query($sql);
+        $announcements = [];
+
+        while ($row = $result->fetch_assoc()) {
+            if (trim($row['Announcement']) !== '') {
+                $announcements[] = $row['Announcement'];
+            }
+        }
+
+        $totalLength = strlen(implode('', $announcements));
+        $repeatCount = max(2, ceil(200 / max($totalLength, 1)));
+
+        echo "<div class='announcement-track'>";
+
+        for ($i = 0; $i < $repeatCount * 2; $i++) {
+            foreach ($announcements as $announcement) {
+                echo "<a>" . e($announcement) . "</a>";
+            }
+        }
+
+        echo "</div>";
+        ?>
+    </div>
 </div>
 <div class="background-image"></div>
 <div class="contentcontainer">
