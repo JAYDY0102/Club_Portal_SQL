@@ -94,6 +94,29 @@ if ($RequestType == 'Banner') {
     $Advisors = $_POST['Advisors'] ?? '';
     $Executives = $_POST['Executives'] ?? '';
 
+    $AdvisorList = array_map('trim', explode(',', $Advisors));
+    $ExecutiveList = array_map('trim', explode(',', $Executives));
+
+    foreach ($AdvisorList as $advisor) {
+        $sqlAdvisor = "SELECT Name FROM users WHERE Email = '$advisor'";
+        $AdvisorResult = $conn->query($sqlAdvisor);
+        if ($AdvisorResult && ($advisorRow = $AdvisorResult->fetch_assoc())) {
+            $advisorstmt = $conn->prepare("UPDATE users SET Role='advisor' WHERE Email = ?");
+            $advisorstmt->bind_param("s", $advisor);
+            $advisorstmt->execute();
+        }
+    }
+
+    foreach ($ExecutiveList as $executive) {
+        $sqlExecutive = "SELECT Name FROM users WHERE Email = '$executive'";
+        $ExecutiveResult = $conn->query($sqlExecutive);
+        if ($ExecutiveResult && ($executiveRow = $ExecutiveResult->fetch_assoc())) {
+            $executivestmt = $conn->prepare("UPDATE users SET Role='executive' WHERE Email = ?");
+            $executivestmt->bind_param("s", $executive);
+            $executivestmt->execute();
+        }
+    }
+
     $stmt = $conn->prepare("UPDATE clubs SET Name = ?, ClubType = ?, MemberCount = ?, MeetDay = ?, Location = ?, Summary = ?, About = ?, Instagram = ?, Youtube = ?, Website = ?, Social = ?, Advisors = ?, Executives = ? WHERE DirName = ?");
     $stmt->bind_param(
         "ssisssssssssss",
@@ -143,6 +166,29 @@ if ($RequestType == 'Banner') {
         }
     } else {
         $response .= "no-banner;";
+    }
+
+    $AdvisorList = array_map('trim', explode(',', $Advisors));
+    $ExecutiveList = array_map('trim', explode(',', $Executives));
+
+    foreach ($AdvisorList as $advisor) {
+        $sqlAdvisor = "SELECT Name FROM users WHERE Email = '$advisor'";
+        $AdvisorResult = $conn->query($sqlAdvisor);
+        if ($AdvisorResult && ($advisorRow = $AdvisorResult->fetch_assoc())) {
+            $advisorstmt = $conn->prepare("UPDATE users SET Role='advisor' WHERE Email = ?");
+            $advisorstmt->bind_param("s", $advisor);
+            $advisorstmt->execute();
+        }
+    }
+
+    foreach ($ExecutiveList as $executive) {
+        $sqlExecutive = "SELECT Name FROM users WHERE Email = '$executive'";
+        $ExecutiveResult = $conn->query($sqlExecutive);
+        if ($ExecutiveResult && ($executiveRow = $ExecutiveResult->fetch_assoc())) {
+            $executivestmt = $conn->prepare("UPDATE users SET Role='executive' WHERE Email = ?");
+            $executivestmt->bind_param("s", $executive);
+            $executivestmt->execute();
+        }
     }
 
     $stmt = $conn->prepare("INSERT INTO clubs(DirName, Name, ClubType, MemberCount, MeetDay, Location, Summary, About, Instagram, Youtube, Website, Social, Advisors, Executives) 

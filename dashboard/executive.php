@@ -20,7 +20,6 @@ function e($value): string
 {
     return htmlspecialchars(($value ?? ''), ENT_QUOTES, 'UTF-8');
 }
-$email = '';
 if ($SignedIn) {
     $email = $user['Email'];
     $stmt = $conn->prepare("SELECT Role FROM users WHERE Email='$email'");
@@ -28,10 +27,33 @@ if ($SignedIn) {
     $result = $stmt->get_result();
     $row = $result->fetch_assoc();
     $role = $row['Role'];
-    if (!$row){
-        header('Location: ../index.php');
-        exit;
+    echo "<script>console.log('User role: $role');</script>";
+    $stmt = $conn->prepare("SELECT Executives,Advisors FROM clubs");
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $Executives = [];
+    $Advisors = [];
+    while ($row = $result->fetch_assoc()) {
+        $executivesList = array_map('trim', explode(',', $row['Executives']));
+        $advisorsList = array_map('trim', explode(',', $row['Advisors']));
+        foreach ($executivesList as $executive) {
+            $Executives[] .= $executive;
+        }
+        foreach ($advisorsList as $advisor) {
+            $Advisors[] .= $advisor;
+        }
     }
+    if (($role == 'executive' && !in_array($email, $Executives)) || ($role == 'advisor' && !in_array($email, $Advisors))) {
+        $role = 'user';
+    } elseif (in_array($email, $Executives) && $role != 'executive') {
+        $role = 'executive';
+    } elseif (in_array($email, $Advisors) && $role != 'advisor') {
+        $role = 'advisor';
+    }
+    echo "<script>console.log('User role: $role');</script>";
+    $stmt = $conn->prepare("UPDATE users SET role = ? WHERE Email = ?");
+    $stmt->bind_param("ss", $role, $email);
+    $stmt->execute();
     if ($role != 'executive') {
         header('Location: ../index.php');
         exit;
@@ -113,7 +135,7 @@ if ($SignedIn) {
                     <p>Manage clubs</p>
                 </div>
                 <div class="club-panel">
-                    <div class="club-section">
+                    <div class="panel-section">
                         <h2>Select Club</h2>
                         <label for="club-search" style="display: none">Search Clubs...</label>
                         <input id="club-search" type="text" class="club-search" placeholder="Search Clubs...">
@@ -156,7 +178,7 @@ if ($SignedIn) {
                             </div>
                         </div>
                     </div>
-                    <div class="club-section">
+                    <div class="panel-section">
                         <h2>Modify Club</h2>
                         <div class="form-group see-thru">
                             <div class="form-group-title">Generic Information</div>

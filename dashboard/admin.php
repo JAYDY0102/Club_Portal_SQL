@@ -23,14 +23,17 @@ function e($value): string
 
 if ($SignedIn) {
     $email = $user['Email'];
-    $stmt = $conn->prepare("SELECT AdminFlag FROM users WHERE Email='$email'");
+    $stmt = $conn->prepare("SELECT AdminFlag FROM users WHERE Email=?");
+    $stmt->bind_param("s", $email);
     $stmt->execute();
     $result = $stmt->get_result();
     $row = $result->fetch_assoc();
-    $role = $row['AdminFlag'];
-    if ($role != 1) {
+    $role = $row['Role'];
+    $admin = $row['AdminFlag'];
+    if ($admin != 1) {
         header('Location: ../index.php');
     }
+    echo "<script>console.log('User role: $role, AdminFlag: $admin');</script>";
 } else {
     header('Location: ../index.php');
 }
@@ -107,7 +110,7 @@ if ($SignedIn) {
                     <p>Manage clubs and users</p>
                 </div>
                 <div class="club-panel">
-                    <div class="club-section">
+                    <div class="panel-section">
                         <h2>Select Club</h2>
                         <label for="club-search" style="display: none">Search Clubs...</label>
                         <input id="club-search" type="text" class="club-search" placeholder="Search Clubs...">
@@ -149,7 +152,7 @@ if ($SignedIn) {
                             </div>
                         </div>
                     </div>
-                    <div class="club-section">
+                    <div class="panel-section">
                         <h2>Modify Club</h2>
                         <div class="form-group see-thru">
                             <div class="form-group-title">Generic Information</div>
@@ -207,6 +210,14 @@ if ($SignedIn) {
                         <div class="form-btn-group">
                             <div class="form-btn" id="save-btn">Save Changes</div>
                             <div class="form-btn" id="delete-btn">Delete Club</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="user-panel">
+                    <div class="panel-section">
+                        <h2>Manage Users</h2>
+                        <div class="">
+
                         </div>
                     </div>
                 </div>

@@ -24,7 +24,7 @@ function e($value): string
     return htmlspecialchars(($value ?? ''), ENT_QUOTES, 'UTF-8');
 }
 
-if($SignedIn){
+if ($SignedIn){
     $email = $user['Email'];
     $stmt = $conn->prepare("SELECT Role, AdminFlag FROM users WHERE Email = ?");
     $stmt->bind_param("s", $email);
@@ -33,6 +33,31 @@ if($SignedIn){
     $row = $result->fetch_assoc();
     $role = $row['Role'];
     $admin = $row['AdminFlag'];
+    $stmt = $conn->prepare("SELECT Executives,Advisors FROM clubs");
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $Executives = [];
+    $Advisors = [];
+    while ($row = $result->fetch_assoc()) {
+        $executivesList = array_map('trim', explode(',', $row['Executives']));
+        $advisorsList = array_map('trim', explode(',', $row['Advisors']));
+        foreach ($executivesList as $executive) {
+            $Executives[] .= $executive;
+        }
+        foreach ($advisorsList as $advisor) {
+            $Advisors[] .= $advisor;
+        }
+    }
+    if (($role == 'executive' && !in_array($email, $Executives)) || ($role == 'advisor' && !in_array($email, $Advisors))) {
+        $role = 'user';
+    } elseif (in_array($email, $Executives) && $role != 'executive') {
+        $role = 'executive';
+    } elseif (in_array($email, $Advisors) && $role != 'advisor') {
+        $role = 'advisor';
+    }
+    $stmt = $conn->prepare("UPDATE users SET role = ? WHERE Email = ?");
+    $stmt->bind_param("ss", $role, $email);
+    $stmt->execute();
     echo "<script>console.log('User role: $role, AdminFlag: $admin');</script>";
 }
 ?>
@@ -146,12 +171,24 @@ if($SignedIn){
                 <div class="filters">
                     <div class="filter-row">
                         <button class="type-filter chip active" data-filter="all">All</button>
-                        <button class="type-filter chip" data-filter="STEM">STEM</button>
-                        <button class="type-filter chip" data-filter="Academic">Academic</button>
-                        <button class="type-filter chip" data-filter="Arts & Culture">Arts & Culture</button>
-                        <button class="type-filter chip" data-filter="Community Service">Community Service</button>
-                        <button class="type-filter chip" data-filter="Journalism">Journalism</button>
-                        <button class="type-filter chip" data-filter="Sports">Sports</button>
+                        <?php
+                        $sql = "SELECT ClubType FROM clubs";
+                        $result = $conn->query($sql);
+                        $uniqueClubType = [];
+                        if ($result->num_rows > 0){
+                            while($row = $result->fetch_assoc()){
+                                $clubTypes = array_map('trim', explode(',', $row["ClubType"]));
+                                foreach ($clubTypes as $type){
+                                    if (!in_array($type, $uniqueClubType) && $type !== '') {
+                                        $uniqueClubType[] .= $type;
+                                    }
+                                }
+                            }
+                        }
+                        foreach ($uniqueClubType as $type) {
+                            echo "<button class='type-filter chip' data-filter='" . e($type) . "'>" . e($type) . "</button>";
+                        }
+                        ?>
                     </div>
                     <div class="filter-row">
                         <button class="day-filter chip active" data-filter="all">All Days</button>
