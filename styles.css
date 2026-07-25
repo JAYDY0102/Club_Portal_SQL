@@ -535,7 +535,7 @@ body {
 }
 
 .grid {
-    display: grid;
+    display: inline-grid;
     grid-template-columns: repeat(auto-fill, minmax(200px, 314px));
     gap: 20px;
     min-width: 0;
