@@ -396,7 +396,7 @@ if ($SignedIn){
             <div class="footerlinks" style="overflow-x:auto;">
                 <div class="footerlinks_1">
                     <a href="https://tigerclubs.org/index.php" aria-label="Tigerclubs.org">
-                        <i class="fa fa-logo"> 1 </i>
+                        <i class="fa fa-logo">1</i>
                     </a>
                 </div>
                 <div class="footerlinks_1">
@@ -533,10 +533,16 @@ if ($SignedIn){
                 .map(type => `<span class="card-tag">${type}</span>`)
                 .join('');
 
-            const instagramLink = instagram ? makeLink(`https://www.instagram.com/${instagram}`, '🔗') : '';
-            const youtubeLink = youtube ? makeLink(youtube, '🔗') : '';
-            const websiteLink = website ? makeLink(website, '🔗') : '';
-            const socialLink = social ? makeLink(social, '🔗') : '';
+            function makeLink(url, svgPath, altText) {
+                return`
+            <a href="${url}" target="_blank" aria-label="${altText}" title="${altText}">
+                <img src="${svgPath}" alt="${altText}" class="link-icon">
+            </a>`;}
+
+            const instagramLink = instagram ? makeLink(`https://www.instagram.com/${instagram}`, 'assets/site_images/instagram.svg', 'Instagram') : '';
+            const youtubeLink = youtube ? makeLink(youtube, 'assets/site_images/youtube.svg', 'YouTube') : '';
+            const websiteLink = website ? makeLink(website, 'assets/site_images/website.svg', 'Website') : '';
+            const socialLink = social ? makeLink(social, 'assets/site_images/link.svg', 'Social Link') : '';
             const links = [instagramLink, youtubeLink, websiteLink, socialLink].filter(link => link !== '');
 
             if (links.length === 0){
