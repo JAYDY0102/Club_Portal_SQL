@@ -387,13 +387,16 @@ if ($SignedIn){
         </div>
     </div>
 </div>
+<div class="mobile-drawer">
+
+</div>
 <div class ="wrappercontainer">
     <div class="footerwrapper">
         <div class="spacefooter">
-            <div class="footerlinks" style="overflow:hidden;">
+            <div class="footerlinks" style="overflow-x:auto;">
                 <div class="footerlinks_1">
                     <a href="https://tigerclubs.org/index.php" aria-label="Tigerclubs.org">
-                        <i class="fa fa-logo">1</i>
+                        <i class="fa fa-logo"> 1 </i>
                     </a>
                 </div>
                 <div class="footerlinks_1">
@@ -443,6 +446,8 @@ if ($SignedIn){
     const mobileMenu = document.querySelector('.mobile-menu');
     const mobileNav = document.querySelector('.tnb-mobile-nav');
     const closeNav = document.querySelector('.tnb-close-btn');
+    const grid = document.querySelector('.grid');
+    const mobileDrawer = document.querySelector('.mobile-drawer');
 
     let dayFilterActive = 'all';
     let typeFilterActive = 'all';
@@ -473,8 +478,18 @@ if ($SignedIn){
     drawer.addEventListener('click', (event) => {
         if (event.target.closest('#closeDrawer')) {
             layout.classList.remove('drawer-open');
+            grid.classList.remove('grid-open');
+            mobileDrawer.classList.remove('mobile-drawer-open');
         }
     });
+
+    mobileDrawer.addEventListener('click', (event) => {
+        if (event.target.closest('#closeDrawer')) {
+            layout.classList.remove('drawer-open');
+            grid.classList.remove('grid-open');
+            mobileDrawer.classList.remove('mobile-drawer-open');
+        }
+    })
 
     typeFilter.forEach(filter => {
         filter.addEventListener('click', () => {
@@ -518,11 +533,11 @@ if ($SignedIn){
                 .map(type => `<span class="card-tag">${type}</span>`)
                 .join('');
 
-            const links = []
-            if (instagram) links.push(makeLink(`https://www.instagram.com/${instagram}`, 'Instagram'));
-            if (youtube) links.push(makeLink(youtube, 'YouTube'));
-            if (website) links.push(makeLink(website, 'Website'));
-            if (social) links.push(makeLink(social, 'Social Media'));
+            const instagramLink = instagram ? makeLink(`https://www.instagram.com/${instagram}`, '🔗') : '';
+            const youtubeLink = youtube ? makeLink(youtube, '🔗') : '';
+            const websiteLink = website ? makeLink(website, '🔗') : '';
+            const socialLink = social ? makeLink(social, '🔗') : '';
+            const links = [instagramLink, youtubeLink, websiteLink, socialLink].filter(link => link !== '');
 
             if (links.length === 0){
                 if (signed==='true'){
@@ -585,7 +600,13 @@ if ($SignedIn){
                     <h3>Contact</h3>
                     <p><strong>Advisors:</strong> ${advisors}</p>
                     <p><strong>Executive:</strong> ${executive}</p>
-                    ${links ? `<h3>Links</h3><p>${links}</p>` : ''}
+                    <h3>Links</h3>
+                    <div class="link-grid">
+                        ${instagramLink ? `<div class="link-item">Instagram: ${instagramLink}</div>` : ''}
+                        ${youtubeLink ? `<div class="link-item">YouTube: ${youtubeLink}</div>` : ''}
+                        ${websiteLink ? `<div class="link-item">Website: ${websiteLink}</div>` : ''}
+                        ${socialLink ? `<div class="link-item">Social: ${socialLink}</div>` : ''}
+                    </div>
                 </div>
                 `
                 } else {
@@ -604,12 +625,21 @@ if ($SignedIn){
                     <p><strong>Members:</strong> ${memberCount}</p>
                     <h3>About</h3>
                     <p>${about}</p>
-                    ${links ? `<h3>Links</h3><p>${links}</div>` : ''}
+                    <h3>Links</h3>
+                    <div class="link-grid">
+                        ${instagramLink ? `<div class="link-item">Instagram: ${instagramLink}</div>` : ''}
+                        ${youtubeLink ? `<div class="link-item">YouTube: ${youtubeLink}</div>` : ''}
+                        ${websiteLink ? `<div class="link-item">Website: ${websiteLink}</div>` : ''}
+                        ${socialLink ? `<div class="link-item">Social: ${socialLink}</div>` : ''}
+                    </div>
                 </div>
                 `
                 }
             }
+            mobileDrawer.innerHTML = drawer.innerHTML;
             layout.classList.add("drawer-open");
+            grid.classList.add("grid-open");
+            mobileDrawer.classList.add("mobile-drawer-open");
         })
     })
     function filterCards() {
