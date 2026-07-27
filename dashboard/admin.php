@@ -266,7 +266,7 @@ if ($SignedIn) {
 <div class ="wrappercontainer">
     <div class="footerwrapper">
         <div class="spacefooter">
-            <div class="footerlinks" style="overflow:hidden;">
+            <div class="footerlinks" style="overflow-x:auto;">
                 <div class="footerlinks_1">
                     <a href="https://tigerclubs.org/index.php" aria-label="Tigerclubs.org">
                         <i class="fa fa-logo">1</i>

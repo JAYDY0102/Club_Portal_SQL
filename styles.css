@@ -986,6 +986,14 @@ body {
     align-items: stretch;
 }
 
+@media (max-width: 688px) {
+    .club-panel {
+        display: flex;
+        flex-direction: column;
+        margin: 0;
+    }
+}
+
 .user-panel {
     margin: 24px 0;
     display: grid;
@@ -1008,10 +1016,23 @@ body {
     flex-direction: column;
 }
 
+@media (max-width: 688px) {
+    .panel-section {
+        padding: 12px;
+    }
+}
+
 .panel-section h2 {
     font-size: 1.2rem;
     margin: 0 0 20px;
     font-weight: normal;
+}
+
+@media (max-width: 688px) {
+    .panel-section h2 {
+        font-size: 1rem;
+        margin: 0 0 10px;
+    }
 }
 
 .club-search {
@@ -1021,6 +1042,13 @@ body {
     background-color: var(--divider);
     font-size: 14px;
     border: none;
+}
+
+@media (max-width: 688px) {
+    .club-search {
+        margin-bottom: 10px;
+        padding: 6px 7px;
+    }
 }
 
 .club-search:focus {
@@ -1033,12 +1061,24 @@ body {
     margin-bottom: 20px;
 }
 
+@media (max-width: 688px) {
+    .club-list{
+        margin-bottom: 10px;
+    }
+}
+
 .club-list select{
     width: 100%;
     height: 200px;
     padding: 0;
     border: none;
     font-size: 14px;
+}
+
+@media (max-width: 688px) {
+    .club-list select{
+        height: auto;
+    }
 }
 
 .club-list select:focus{
@@ -1050,6 +1090,12 @@ body {
     background-color: var(--divider);
 }
 
+@media (max-width: 688px) {
+    .club-list select option{
+        padding: 6px 7px;
+    }
+}
+
 .banner-section {
     display: grid;
     border-radius: 8px;
@@ -1058,6 +1104,12 @@ body {
     overflow: hidden;
     margin-bottom: 20px;
     text-align: center;
+}
+
+@media (max-width: 688px) {
+    .banner-section {
+        margin-bottom: 10px;
+    }
 }
 
 .banner-section img {
@@ -1075,6 +1127,12 @@ body {
     padding: 12px;
     margin-bottom: 20px;
     flex: 1;
+}
+
+@media (max-width: 688px) {
+    .banner-upload {
+        margin-bottom: 10px;
+    }
 }
 
 .upload-label {
@@ -1098,10 +1156,24 @@ body {
     margin-bottom: 20px;
 }
 
+@media (max-width: 688px) {
+    .form-group {
+        margin-bottom: 10px;
+        padding: 6px 7px;
+    }
+}
+
 .form-group-title {
     font-size: 16px;
     padding-bottom: 12px;
     font-weight: 600;
+}
+
+@media (max-width: 688px) {
+    .form-group-title {
+        font-size: 12px;
+        padding-bottom: 0;
+    }
 }
 
 .form-grid{
@@ -1115,6 +1187,13 @@ body {
     padding: 8px 12px;
 }
 
+@media (max-width: 688px) {
+    .form-grid label {
+        font-size: 10px;
+        padding: 6px 7px;
+    };
+}
+
 .form-input {
     padding: 8px 12px;
     border-radius: 8px;
@@ -1122,6 +1201,13 @@ body {
     background-color: var(--primary-white);
     font-size: 14px;
     resize: none;
+}
+
+@media (max-width: 688px) {
+    .form-input {
+        font-size: 10px;
+        width: 200px;
+    }
 }
 
 .form-btn-group {

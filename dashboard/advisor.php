@@ -286,7 +286,7 @@ if ($SignedIn) {
 <div class ="wrappercontainer">
     <div class="footerwrapper">
         <div class="spacefooter">
-            <div class="footerlinks" style="overflow:hidden;">
+            <div class="footerlinks" style="overflow-x:auto;">
                 <div class="footerlinks_1">
                     <a href="https://tigerclubs.org/index.php" aria-label="Tigerclubs.org">
                         <i class="fa fa-logo">1</i>
@@ -313,17 +313,6 @@ if ($SignedIn) {
                     $conn->close();
                     ?>
                 </div>
-            </div>
-            <div class="footertext">
-                Tigerclubs.org is made to promote connectivity across all clubs of SIS. It prioritizes accessibility over functionality.
-                <br>
-                Select members of Coding Club are constantly working to improve the website, but we cannot warrant that it will be free of bugs.
-                <br>
-                Please use the links below to submit any main banner request, club-specific website interest form, or bug reports if you happen to notice any.
-                <br>
-                <br>
-                <a href="https://github.com/JAYDY0102/Club_Portal_SQL/blob/master/LICENSE">MIT License</a>
-                of the website's source code.
             </div>
         </div>
     </div>
