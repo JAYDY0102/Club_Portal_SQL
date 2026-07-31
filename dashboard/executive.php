@@ -223,8 +223,16 @@ if ($SignedIn) {
                             <div class="form-grid">
                                 <label for="club-name">Club Name</label>
                                 <input id="club-name" type="text" class="form-input" placeholder="Club Name">
-                                <label for="club-type">Club Type(s) – Separate by comma w/o spaces</label>
-                                <input id="club-type" class="form-input" placeholder="Club Types">
+                                <label for="club-type">Club Type</label>
+                                <select id="club-type" class="form-input">
+                                    <option value="Academic">Academic</option>
+                                    <option value="Arts & Culture">Arts & Culture</option>
+                                    <option value="Community Service">Community Service</option>
+                                    <option value="Journalism">Journalism</option>
+                                    <option value="Sports">Sports</option>
+                                    <option value="STEM">STEM</option>
+                                    <option value="Other">Other</option>
+                                </select>
                             </div>
                         </div>
                         <div class="form-group see-thru">
