@@ -32,6 +32,7 @@ $admin = $row['AdminFlag'];
 
 if (!$SignedIn) {
     header('Location: ../index.php');
+    exit;
 }
 ?>
 <!DOCTYPE html>
@@ -171,7 +172,41 @@ if (!$SignedIn) {
 </div>
 <div class="background-image"></div>
 <div class="contentcontainer">
-
+    <div class="belowtopnavcontainer">
+        <div class="sis-main" id="main">
+            <div class="content">
+                <div class="section-head">
+                    <h2>Calendar</h2>
+                    <p>Check club events</p>
+                </div>
+                <div class="calendar-panel">
+                    <div class="calendar-section">
+                        <h2>Calendar</h2>
+                        <div class="calendar-group see-thru">
+                            <header class="calendar-header" aria-label="Calendar">
+                                <button id="prev-btn">◀</button>
+                                <h2 id="month-year-display"></h2>
+                                <button id="next-btn">▶</button>
+                            </header>
+                            <div class="weekdays-grid">
+                                <div>Sun</div>
+                                <div>Mon</div>
+                                <div>Tue</div>
+                                <div>Wed</div>
+                                <div>Thu</div>
+                                <div>Fri</div>
+                                <div>Sat</div>
+                            </div>
+                            <div id="days-grid" class="days-grid"></div>
+                        </div>
+                    </div>
+                    <div class="calendar-section">
+                        <h2>Upcoming Events</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 <div class ="wrappercontainer">
     <div class="footerwrapper">
@@ -224,6 +259,19 @@ if (!$SignedIn) {
     const mobileMenu = document.querySelector('.mobile-menu');
     const mobileNav = document.querySelector('.tnb-mobile-nav');
     const closeNav = document.querySelector('.tnb-close-btn');
+    const monthYearDisplay = document.getElementById('month-year-display');
+    const daysGrid = document.getElementById('days-grid');
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+
+    const state = {
+        currentDate: new Date(),
+        renderToken: 0
+    }
+
+    const monthNames = [
+        "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"
+    ];
 
     mobileMenu.addEventListener('click', () => {
         const state = mobileMenu.getAttribute('data-state');
@@ -243,4 +291,95 @@ if (!$SignedIn) {
         mobileMenu.setAttribute('data-state', 'closed');
         mobileNav.style.display = 'none';
     })
+
+    prevBtn.addEventListener('click', () => {
+        state.currentDate.setMonth(state.currentDate.getMonth() - 1);
+        renderCalendar();
+    })
+
+    nextBtn.addEventListener('click', () => {
+        state.currentDate.setMonth(state.currentDate.getMonth() + 1);
+        renderCalendar();
+    })
+
+    function pad2(n) {
+        return String(n).padStart(2, '0');
+    }
+
+    renderCalendar();
+
+    async function fetchEvents(year, month) {
+        const formData = new FormData();
+        formData.append('RequestType', 'calendar-fetch');
+        formData.append('Year', String(year));
+        formData.append('Month', String(month + 1));
+        formData.append('Requester', '<?php echo $email ?>');
+        const response = await fetch('../post.php', {
+            method: 'POST',
+            body: formData
+        });
+
+        return response.json();
+    }
+
+    function groupEventsByDate(events) {
+        const map = {};
+        for (const event of events) {
+            const dateKey = event.date; // YYYY-MM-DD
+            if (!map[dateKey]) map[dateKey] = [];
+            map[dateKey].push(event);
+        }
+        return map;
+    }
+
+    async function renderCalendar() {
+        const token = ++state.renderToken;
+
+        const year = state.currentDate.getFullYear();
+        const month = state.currentDate.getMonth();
+
+        monthYearDisplay.textContent = `${monthNames[month]} ${year}`;
+        daysGrid.innerHTML = '';
+
+        const firstDayIndex = new Date(year, month, 1).getDay();
+        const totalDays = new Date(year, month + 1, 0).getDate();
+        const today = new Date();
+
+        let eventsByDate = {};
+
+        try {
+            const events = await fetchEvents(year, month);
+            if (token !== state.renderToken) return; // If a new render has started, ignore this one
+            eventsByDate = groupEventsByDate(events);
+        } catch (error) {
+            console.error('Error fetching events:', error);
+        }
+        for (let i = 1; i <= totalDays; i++) {
+            if (token !== state.renderToken) return;
+            const dayCell = document.createElement('div');
+            dayCell.classList.add('day');
+            if (i === 1){
+                dayCell.style.gridColumnStart = firstDayIndex + 1;
+            }
+            const dateKey = `${year}-${pad2(month + 1)}-${pad2(i)}`;
+            const events = eventsByDate[dateKey] || [];
+            let eventsHtml = '';
+            for (const event of events) {
+                eventsHtml += `<div class="event"
+                    data-club="${event.club}"
+                    data-date="${event.date}"
+                    data-title="${event.title}"
+                    data-description="${event.description}">
+                    ${event.title} (${event.club})
+                </div>`;
+            }
+
+            dayCell.innerHTML = `
+                <a class="date">${i}</a>
+                <div class="events">${eventsHtml}</div>
+            `;
+
+            daysGrid.appendChild(dayCell);
+        }
+    }
 </script>

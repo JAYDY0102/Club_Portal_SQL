@@ -223,6 +223,52 @@ if ($RequestType == 'Banner') {
     } else {
         echo "shinji-01;" . $stmt->error;
     }
+} else if ($RequestType == 'calendar-fetch') {
+    $Year = $_POST['Year'] ?? '1970';
+    $Month = $_POST['Month'] ?? '01';
+    $Requester = $_POST['Requester'] ?? '';
+
+    $monthStart = sprintf('%04d-%02d-01 00:00:00', (int)$Year, (int)$Month);
+    $nextMonth = new DateTime($monthStart);
+    $nextMonth->modify('+1 month');
+    $monthEnd = $nextMonth->format('Y-m-d 00:00:00');
+
+    $stmtClubs = $conn->prepare("SELECT MemberOf FROM users WHERE Email = ?");
+    $stmtClubs->bind_param("s", $Requester);
+    $stmtClubs->execute();
+    $result = $stmtClubs->get_result();
+    $memberOf = $result->fetch_assoc()['MemberOf'] ?? '';
+    $clubs = array_map('trim', explode(',', $memberOf));
+
+    $events = [];
+
+    $stmt = $conn->prepare("SELECT * FROM calendar WHERE Date BETWEEN ? AND ?");
+    $stmt->bind_param("ss", $monthStart, $monthEnd);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    while ($row = $result->fetch_assoc()) {
+        $Visibility = $row['Visible'];
+        $ClubID = $row['ClubID'];
+        $clubName = 'General';
+        if ($ClubID != 0 || $ClubID != null) {
+            $stmtClubName = $conn->prepare("SELECT Name FROM clubs WHERE ClubID = ?");
+            $stmtClubName->bind_param("i", $row['ClubID']);
+            $stmtClubName->execute();
+            $resultClubName = $stmtClubName->get_result();
+            $clubRow = $resultClubName->fetch_assoc();
+            $clubName = $clubRow['Name'] ?? 'General';
+        }
+        if ($Visibility != 0 || in_array($row['ClubID'], $clubs, true)) {
+            $events[] = [
+                'club' => $clubName,
+                'date' => substr($row['Date'], 0, 10),
+                'title' => $row['EventName'],
+                'description' => $row['EventDescription']
+            ];
+        }
+    }
+    header('Content-Type: application/json');
+    echo json_encode($events);
 }
 
 $conn->close();

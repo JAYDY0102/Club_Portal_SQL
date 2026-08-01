@@ -70,7 +70,7 @@ CREATE TABLE calendar(
     EventName VARCHAR(255),
     EventDescription VARCHAR(4095),
     Visible BOOLEAN DEFAULT TRUE,
-    PRIMARY KEY (ClubID)
+    PRIMARY KEY (EventID)
 );
 ```
 
