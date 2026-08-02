@@ -233,12 +233,15 @@ if ($RequestType == 'Banner') {
     $nextMonth->modify('+1 month');
     $monthEnd = $nextMonth->format('Y-m-d 00:00:00');
 
-    $stmtClubs = $conn->prepare("SELECT MemberOf FROM users WHERE Email = ?");
+    $stmtClubs = $conn->prepare("SELECT MemberOf,AdminFlag FROM users WHERE Email = ?");
     $stmtClubs->bind_param("s", $Requester);
     $stmtClubs->execute();
     $result = $stmtClubs->get_result();
-    $memberOf = $result->fetch_assoc()['MemberOf'] ?? '';
+    $row = $result->fetch_assoc() ?? [];
+    $memberOf = $row['MemberOf'] ?? '';
+    $AdminFlag = $row['AdminFlag'] ?? '0';
     $clubs = array_map('trim', explode(',', $memberOf));
+    $stmtClubs->close();
 
     $events = [];
 
@@ -247,28 +250,120 @@ if ($RequestType == 'Banner') {
     $stmt->execute();
     $result = $stmt->get_result();
     while ($row = $result->fetch_assoc()) {
-        $Visibility = $row['Visible'];
         $ClubID = $row['ClubID'];
-        $clubName = 'General';
-        if ($ClubID != 0 || $ClubID != null) {
-            $stmtClubName = $conn->prepare("SELECT Name FROM clubs WHERE ClubID = ?");
-            $stmtClubName->bind_param("i", $row['ClubID']);
+        $EventID = $row['EventID'];
+        $Date = $row['Date'];
+        $EventName = $row['EventName'];
+        $EventDescription = $row['EventDescription'];
+        $Visibility = $row['Visible'];
+        $ClubName = 'General';
+        $executives = [];
+        $advisors = [];
+        if ($ClubID != 0 && $ClubID != null) {
+            $stmtClubName = $conn->prepare("SELECT Name,Executives,Advisors FROM clubs WHERE ClubID = ?");
+            $stmtClubName->bind_param("i", $ClubID);
             $stmtClubName->execute();
             $resultClubName = $stmtClubName->get_result();
             $clubRow = $resultClubName->fetch_assoc();
-            $clubName = $clubRow['Name'] ?? 'General';
+            $ClubName = $clubRow['Name'] ?? 'General';
+            $executives = array_map('trim', explode(',', $clubRow['Executives'] ?? ''));
+            $advisors = array_map('trim', explode(',', $clubRow['Advisors'] ?? ''));
         }
-        if ($Visibility != 0 || in_array($row['ClubID'], $clubs, true)) {
+        if ($AdminFlag == '1' || $Visibility != 0 || in_array($ClubID, $clubs, true) || in_array($Requester, $executives, true) || in_array($Requester, $advisors, true)) {
             $events[] = [
-                'club' => $clubName,
-                'date' => substr($row['Date'], 0, 10),
-                'title' => $row['EventName'],
-                'description' => $row['EventDescription']
+                'clubName' => $ClubName,
+                'clubID' => $ClubID,
+                'date' => substr($Date, 0, 10),
+                'eventName' => $EventName,
+                'eventDescription' => $EventDescription,
+                'eventId' => $EventID
             ];
         }
     }
     header('Content-Type: application/json');
     echo json_encode($events);
+} else if ($RequestType == 'event-add') {
+    $EventName = trim($_POST['EventName'] ?? '');
+    $EventDescription = trim($_POST['EventDescription'] ?? '');
+    $Date = $_POST['Date'] ?? '1970-01-01 00:00:00';
+    $DirName = $_POST['DirName'] ?? 'general';
+    $Visible = (int)($_POST['Visible'] ?? 1);
+
+    $ClubID = null;
+
+    if ($DirName !== 'general' && $DirName !== 'General' && $DirName !== '') {
+        $stmtClub = $conn->prepare("SELECT ClubID FROM clubs WHERE DirName = ?");
+        $stmtClub->bind_param("s", $DirName);
+        $stmtClub->execute();
+        $clubResult = $stmtClub->get_result();
+        $clubRow = $clubResult->fetch_assoc();
+        $ClubID = $clubRow['ClubID'] ?? null;
+        $stmtClub->close();
+    }
+
+    $stmt = $conn->prepare("INSERT INTO calendar(EventName, EventDescription, Date, ClubID, Visible) VALUES (?, ?, ?, ?, ?)");
+    $stmt->bind_param("sssii", $EventName, $EventDescription, $Date, $ClubID, $Visible);
+
+    if ($stmt->execute()) {
+        echo "rei;Event added successfully!";
+    } else {
+        echo "shinji-01;" . $stmt->error;
+    }
+    $stmt->close();
+} else if ($RequestType == 'event-save') {
+    $EventID = (int)($_POST['EventID'] ?? 0);
+    $EventName = trim($_POST['EventName'] ?? '');
+    $EventDescription = trim($_POST['EventDescription'] ?? '');
+    $Date = $_POST['Date'] ?? '1970-01-01 00:00:00';
+    $DirName = $_POST['DirName'] ?? 'general';
+    $Visible = (int)($_POST['Visible'] ?? 1);
+
+    if ($EventID <= 0) {
+        echo "shinji-01;Invalid event ID";
+        exit;
+    }
+
+    $ClubID = null;
+
+    if ($DirName !== 'general' && $DirName !== 'General' && $DirName !== '') {
+        $stmtClub = $conn->prepare("SELECT ClubID FROM clubs WHERE DirName = ?");
+        $stmtClub->bind_param("s", $DirName);
+        $stmtClub->execute();
+        $clubResult = $stmtClub->get_result();
+        $clubRow = $clubResult->fetch_assoc();
+        $ClubID = $clubRow['ClubID'] ?? null;
+        $stmtClub->close();
+    }
+
+    $stmt = $conn->prepare("
+        UPDATE calendar
+        SET EventName = ?, EventDescription = ?, Date = ?, ClubID = ?, Visible = ?
+        WHERE EventID = ?
+    ");
+    $stmt->bind_param("sssiii", $EventName, $EventDescription, $Date, $ClubID, $Visible, $EventID);
+
+    if ($stmt->execute()) {
+        echo "rei;Event updated successfully!";
+    } else {
+        echo "shinji-01;" . $stmt->error;
+    }
+    $stmt->close();
+} else if ($RequestType == 'event-delete') {
+    $EventID = (int)($_POST['EventID'] ?? 0);
+
+    if ($EventID <= 0) {
+        echo "shinji-01;Invalid event ID";
+        exit;
+    }
+
+    $stmt = $conn->prepare("DELETE FROM calendar WHERE EventID = ?");
+    $stmt->bind_param("i", $EventID);
+
+    if ($stmt->execute()) {
+        echo "rei;Event deleted successfully!";
+    } else {
+        echo "shinji-01;" . $stmt->error;
+    }
 }
 
 $conn->close();

@@ -1,8 +1,17 @@
 @font-face {
     font-family: 'unified';
-    src: url('/assets/fonts/GoogleSans-VariableFont_GRAD,opsz,wght.ttf') format(truetype);
-    font-weight: normal;
+    src: url('/assets/fonts/Google_Sans/GoogleSans-VariableFont_GRAD,opsz,wght.ttf') format(truetype);
+    font-weight: 100 900;
     font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'unified';
+    src: url('/assets/fonts/Google_Sans/GoogleSans-Italic-VariableFont_GRAD,opsz,wght.ttf') format(truetype);
+    font-weight: 100 900;
+    font-style: italic;
+    font-display: swap;
 }
 
 @font-face {
@@ -129,11 +138,9 @@ body {
 
 @media (max-width: 688px) {
     #top-nav-bar .tnb-mobile-nav > .mobile-container {
-        padding-top: 70px !important;
-        padding-bottom: 20px !important;
         position: relative;
         height: 100%;
-        padding: 84px 0 100px 0;
+        padding: 70px 0 20px 0;
     }
 }
 
@@ -1073,6 +1080,7 @@ body {
     padding: 0;
     border: none;
     font-size: 14px;
+    background-color: var(--divider);
 }
 
 @media (max-width: 688px) {
@@ -1087,13 +1095,17 @@ body {
 
 .club-list select option{
     padding: 8px 12px;
-    background-color: var(--divider);
 }
 
 @media (max-width: 688px) {
     .club-list select option{
         padding: 6px 7px;
     }
+}
+
+.club-list select option:checked{
+    background-color: var(--accent) !important;
+    color: var(--accent-text);
 }
 
 .banner-section {
@@ -1201,6 +1213,7 @@ body {
     background-color: var(--primary-white);
     font-size: 14px;
     resize: none;
+    font-family: unified, sans-serif;
 }
 
 @media (max-width: 688px) {
@@ -1312,8 +1325,16 @@ body {
     overflow-y: hidden;
 }
 
+.day-today {
+    border: 3px solid var(--accent);
+    padding: 2px 3px;
+}
+
 .date {
     text-align: left;
+    font-family: "unified", sans-serif;
+    color: var(--primary-text);
+    font-weight: 600;
 }
 
 .events {
@@ -1332,6 +1353,30 @@ body {
     white-space: nowrap;
     overflow: hidden;
     text-align: left;
+}
+
+.event.selected {
+    border: 2px solid var(--accent);
+    padding: 2px 6px;
+}
+
+.event-panel {
+    margin: 24px 0;
+    display: grid;
+    gap: 20px;
+    align-items: stretch;
+}
+
+.event-management {
+    display: grid;
+}
+
+.club-search-event {
+    padding: 12px 14px;
+    border-radius: 8px;
+    background-color: var(--divider);
+    font-size: 14px;
+    border: none;
 }
 
 #active {

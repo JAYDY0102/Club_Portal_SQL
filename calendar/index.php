@@ -204,6 +204,87 @@ if (!$SignedIn) {
                         <h2>Upcoming Events</h2>
                     </div>
                 </div>
+                <?php if ($admin == '1' || $role == 'executive' || $role == 'advisor'): ?>
+                <div class="event-panel">
+                    <div class="calendar-section">
+                        <h2 id="event-form-heading">Event Registration</h2>
+                        <div class="event-management">
+                            <div class="form-group see-thru">
+                                <div class="form-group-title">Select Club</div>
+                                <div class="club-list" style="margin-bottom: 0">
+                                    <label for="club-options" style="display: none">Clubs</label>
+                                    <select id="club-options" class="club-options" size="10" style="background-color: var(--primary-white)">
+                                        <?php if ($admin == '1') {
+                                            $sql = "SELECT DirName, Name FROM clubs ORDER BY Name ASC";
+                                            $result = $conn->query($sql);
+                                            echo "<option value='general'>General Event</option>";
+                                        } else {
+                                            if ($role == 'executive') {
+                                                $stmt = $conn->prepare("SELECT DirName, Name FROM clubs WHERE FIND_IN_SET(?, Executives) > 0 ORDER BY Name ASC");
+                                            } else {
+                                                $stmt = $conn->prepare("SELECT DirName, Name FROM clubs WHERE FIND_IN_SET(?, Advisors) > 0 ORDER BY Name ASC");
+                                            }
+                                            $stmt->bind_param("s", $email);
+                                            $stmt->execute();
+                                            $result = $stmt->get_result();
+
+                                        }
+                                        if (!$result) {
+                                            die("Query failed: " . $conn->error);
+                                        }
+                                        if ($result->num_rows > 0) {
+                                            while ($row = $result->fetch_assoc()) {
+                                                echo "<option value='" . $row["DirName"] . "'>" . $row["Name"] . "</option>";
+                                            }
+                                        }
+                                        ?>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-group see-thru">
+                                <div class="form-group-title">Event Name</div>
+                                <div class="form-grid">
+                                    <label for="event-name">Event Name</label>
+                                    <input id="event-name" type="text" class="form-input" placeholder="Event Name">
+                                </div>
+                            </div>
+                            <div class="form-group see-thru">
+                                <div class="form-group-title">Event Description</div>
+                                <div class="form-grid">
+                                    <label for="event-description">Detailed event description that shows up once inspection</label>
+                                    <textarea id="event-description" class="form-input" placeholder="Event Description"></textarea>
+                                </div>
+                            </div>
+                            <div class="form-group see-thru">
+                                <div class="form-group-title">Event Date</div>
+                                <div class="form-grid">
+                                    <label for="event-date">Event Date in DD-MM-YYYY format</label>
+                                    <input id="event-date" type="date" class="form-input" placeholder="Event Date">
+                                </div>
+                            </div>
+                            <div class="form-group see-thru">
+                                <div class="form-group-title">Event Time</div>
+                                <div class="form-grid">
+                                    <label for="event-time">Event Time in 00:00 format, in the 24-hour system</label>
+                                    <input id="event-time" type="time" class="form-input" placeholder="Event Time">
+                                </div>
+                            </div>
+                            <div class="form-group see-thru">
+                                <div class="form-group-title">Event Visibility</div>
+                                <div class="form-grid">
+                                    <label for="event-visibility">Select to make event public to non-members</label>
+                                    <input id="event-visibility" type="checkbox" class="form-input">
+                                </div>
+                            </div>
+                            <div class="form-btn-group">
+                                <div class="form-btn" id="add-btn">Add Event</div>
+                                <div class="form-btn" id="clear-btn" style="display: none">New Event</div>
+                                <div class="form-btn" id="delete-btn" style="display: none">Delete Event</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <?php endif; ?>
             </div>
         </div>
     </div>
@@ -253,6 +334,7 @@ if (!$SignedIn) {
         </div>
     </div>
 </div>
+<input type="hidden" id="event-id" value="">
 </body>
 </html>
 <script>
@@ -263,6 +345,17 @@ if (!$SignedIn) {
     const daysGrid = document.getElementById('days-grid');
     const prevBtn = document.getElementById('prev-btn');
     const nextBtn = document.getElementById('next-btn');
+    const addBtn = document.getElementById('add-btn');
+    const deleteBtn = document.getElementById('delete-btn');
+    const clubOptions = document.getElementById('club-options');
+    const nameInput = document.getElementById('event-name');
+    const descriptionInput = document.getElementById('event-description');
+    const dateInput = document.getElementById('event-date');
+    const timeInput = document.getElementById('event-time');
+    const visibilityInput = document.getElementById('event-visibility');
+    const eventIdInput = document.getElementById('event-id');
+    const clearBtn = document.getElementById('clear-btn');
+    const calendarSection = document.getElementById('event-form-heading');
 
     const state = {
         currentDate: new Date(),
@@ -302,6 +395,94 @@ if (!$SignedIn) {
         renderCalendar();
     })
 
+    daysGrid.addEventListener('click', (e) => {
+        const eventEl = e.target.closest('.event');
+        if (!eventEl) return;
+
+        document.querySelectorAll('.event.selected').forEach(el => {
+            el.classList.remove('selected');
+        });
+        eventEl.classList.add('selected');
+
+        eventIdInput.value = eventEl.dataset.id || '';
+        clubOptions.value = eventEl.dataset.club || 'general';
+        nameInput.value = eventEl.dataset.title || '';
+        descriptionInput.value = eventEl.dataset.description || '';
+        dateInput.value = eventEl.dataset.date || '';
+
+        setFormMode('edit');
+    });
+
+    clubOptions.addEventListener('change', () => {
+
+    })
+
+    addBtn.addEventListener('click', async () => {
+        const formData = new FormData();
+        formData.append('EventID', eventIdInput.value);
+        formData.append('DirName', clubOptions.value);
+        formData.append('EventName', nameInput.value);
+        formData.append('EventDescription', descriptionInput.value);
+        formData.append('Date', `${dateInput.value} ${timeInput.value}:00`);
+        formData.append('Visible', visibilityInput.checked ? '1' : '0');
+
+        formData.append('RequestType', eventIdInput.value ? 'event-save' : 'event-add');
+
+        const response = await fetch('../post.php', {
+            method: 'POST',
+            body: formData
+        });
+
+        const result = await response.text();
+        const status = result.split(';');
+
+        if (status[0] === 'rei') {
+            alert('Event Successfully Added/Updated');
+            window.location.reload();
+        } else {
+            alert('Failed to add/update event. Please try again.');
+        }
+    });
+
+    clearBtn.addEventListener('click', () => {
+        document.querySelectorAll('.event.selected').forEach(el => {
+            el.classList.remove('selected');
+        });
+        eventIdInput.value = '';
+        clubOptions.value = 'general';
+        nameInput.value = '';
+        descriptionInput.value = '';
+        dateInput.value = '';
+        timeInput.value = '';
+        visibilityInput.checked = false;
+
+        setFormMode('add');
+    });
+
+    deleteBtn.addEventListener('click', async () => {
+        const eventId = eventIdInput.value;
+        if (!eventId) return alert('No event selected.');
+
+        const formData = new FormData();
+        formData.append('RequestType', 'event-delete');
+        formData.append('EventID', eventId);
+
+        const response = await fetch('../post.php', {
+            method: 'POST',
+            body: formData
+        });
+
+        const result = await response.text();
+        const status = result.split(';');
+
+        if (status[0] === 'rei') {
+            alert('Event Successfully Deleted');
+            window.location.reload();
+        } else {
+            alert('Delete failed');
+        }
+    });
+
     function pad2(n) {
         return String(n).padStart(2, '0');
     }
@@ -325,7 +506,7 @@ if (!$SignedIn) {
     function groupEventsByDate(events) {
         const map = {};
         for (const event of events) {
-            const dateKey = event.date; // YYYY-MM-DD
+            const dateKey = event.date;
             if (!map[dateKey]) map[dateKey] = [];
             map[dateKey].push(event);
         }
@@ -349,7 +530,7 @@ if (!$SignedIn) {
 
         try {
             const events = await fetchEvents(year, month);
-            if (token !== state.renderToken) return; // If a new render has started, ignore this one
+            if (token !== state.renderToken) return;
             eventsByDate = groupEventsByDate(events);
         } catch (error) {
             console.error('Error fetching events:', error);
@@ -361,16 +542,20 @@ if (!$SignedIn) {
             if (i === 1){
                 dayCell.style.gridColumnStart = firstDayIndex + 1;
             }
+            if (i ===today.getDate()&&month===today.getMonth()&&year===today.getFullYear()){
+                dayCell.classList.add('day-today');
+            }
             const dateKey = `${year}-${pad2(month + 1)}-${pad2(i)}`;
             const events = eventsByDate[dateKey] || [];
             let eventsHtml = '';
             for (const event of events) {
                 eventsHtml += `<div class="event"
-                    data-club="${event.club}"
+                    data-club-id="${event.clubID}"
                     data-date="${event.date}"
-                    data-title="${event.title}"
-                    data-description="${event.description}">
-                    ${event.title} (${event.club})
+                    data-name="${event.eventName}"
+                    data-description="${event.eventDescription}"
+                    data-id="${event.eventId}">
+                    ${event.eventName} (${event.clubName})
                 </div>`;
             }
 
@@ -380,6 +565,19 @@ if (!$SignedIn) {
             `;
 
             daysGrid.appendChild(dayCell);
+        }
+    }
+    function setFormMode(mode) {
+        if (mode === 'edit') {
+            addBtn.innerText = 'Save Event';
+            clearBtn.style.display = 'inline-block';
+            deleteBtn.style.display = 'inline-block';
+            calendarSection.textContent = 'Event Modification';
+        } else {
+            addBtn.innerText = 'Add Event';
+            clearBtn.style.display = 'none';
+            deleteBtn.style.display = 'none';
+            calendarSection.textContent = 'Event Registration';
         }
     }
 </script>
