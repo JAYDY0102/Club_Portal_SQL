@@ -181,7 +181,12 @@ if ($SignedIn) {
                             <label for="club-options" style="display: none">Clubs</label>
                             <select id="club-options" class="club-options see-thru" size="10">
                                 <?php
-                                $stmt = $conn->prepare("SELECT DirName, Name FROM clubs WHERE FIND_IN_SET(?, Executives) > 0 ORDER BY Name ASC");
+                                $stmt = $conn->prepare(
+                                    "SELECT ClubID, DirName, Name
+                                    FROM clubs
+                                    WHERE FIND_IN_SET(?, REPLACE(Executives, ' ', '')) > 0
+                                    ORDER BY Name ASC"
+                                );
                                 $stmt->bind_param("s", $email);
                                 $stmt->execute();
                                 $result = $stmt->get_result();
@@ -191,7 +196,10 @@ if ($SignedIn) {
                                 }
                                 if ($result->num_rows > 0) {
                                     while ($row = $result->fetch_assoc()) {
-                                        echo "<option value='".$row["DirName"]."'>" . $row["Name"] . "</option>";
+                                        echo "<option
+                                            value='" . e($row['DirName']) . "'
+                                            data-club-id='" . e($row['ClubID']) . "'
+                                        >" . e($row['Name']) . "</option>";
                                     }
                                 }
                                 ?>
@@ -285,6 +293,185 @@ if ($SignedIn) {
                         </div>
                     </div>
                 </div>
+                <section class="panel-section feed-compose-panel">
+                    <div class="section-head">
+                        <h2>Create Feed Post</h2>
+                        <p>Select one of your clubs above, then publish a post.</p>
+                    </div>
+
+                    <form
+                        id="feed-post-form"
+                        class="form-group see-thru"
+                        enctype="multipart/form-data"
+                    >
+                        <input
+                            id="feed-club-id"
+                            name="ClubID"
+                            type="hidden"
+                            value=""
+                        >
+
+                        <div class="form-grid">
+                            <label for="feed-post-title">Post Title</label>
+                            <input
+                                id="feed-post-title"
+                                name="Title"
+                                type="text"
+                                class="form-input"
+                                maxlength="255"
+                                placeholder="Club Post Title"
+                                required
+                            >
+
+                            <label for="feed-post-description">
+                                Post Description
+                            </label>
+                            <textarea
+                                id="feed-post-description"
+                                name="Description"
+                                class="form-input"
+                                maxlength="4095"
+                                placeholder="Write Post Description..."
+                                required
+                            ></textarea>
+
+                            <label for="feed-post-image">
+                                Optional PNG Image
+                            </label>
+                            <input
+                                id="feed-post-image"
+                                name="Image"
+                                type="file"
+                                class="form-input"
+                                accept="image/png"
+                            >
+                        </div>
+
+                        <p
+                            id="feed-post-status"
+                            role="status"
+                            aria-live="polite"
+                        ></p>
+
+                        <div class="form-btn-group">
+                            <button
+                                id="publish-post-btn"
+                                class="form-btn"
+                                type="submit"
+                            >
+                                Publish Post
+                            </button>
+                        </div>
+                    </form>
+                </section>
+                <section class="panel-section feed-manage-panel">
+                    <div class="section-head">
+                        <h2>Manage Feed Posts</h2>
+                        <p>
+                            View and archive active posts from your clubs.
+                        </p>
+                    </div>
+
+                    <p
+                        id="feed-manage-status"
+                        role="status"
+                        aria-live="polite"
+                    ></p>
+
+                    <div id="feed-manage-list" class="feed-manage-list">
+                        <?php
+                        $postListStatement = $conn->prepare(
+                            "SELECT
+                                feed.PostID,
+                                feed.Title,
+                                feed.UploadTime,
+                                clubs.Name AS ClubName
+                             FROM feed
+                             INNER JOIN clubs
+                                ON clubs.ClubID = feed.ClubID
+                             WHERE feed.Visible = 1
+                               AND FIND_IN_SET(
+                                    ?,
+                                    REPLACE(clubs.Executives, ' ', '')
+                               ) > 0
+                             ORDER BY
+                                feed.UploadTime DESC,
+                                feed.PostID DESC"
+                        );
+
+                        $postListStatement->bind_param('s', $email);
+                        $postListStatement->execute();
+
+                        $postListResult =
+                            $postListStatement->get_result();
+                        ?>
+
+                        <?php if ($postListResult->num_rows === 0): ?>
+                            <div
+                                class="feed-manage-empty"
+                                data-feed-empty
+                            >
+                                You do not have any active posts.
+                            </div>
+                        <?php else: ?>
+                            <?php while (
+                                $managedPost =
+                                    $postListResult->fetch_assoc()
+                            ): ?>
+                                <?php
+                                $managedPostID =
+                                    (int) $managedPost['PostID'];
+
+                                $managedTimestamp = strtotime(
+                                    (string) $managedPost['UploadTime']
+                                );
+
+                                $managedDate =
+                                    $managedTimestamp !== false
+                                        ? date(
+                                            'M j, Y',
+                                            $managedTimestamp
+                                        )
+                                        : 'Unknown date';
+                                ?>
+
+                                <article
+                                    class="feed-manage-item"
+                                    data-post-id="<?= $managedPostID ?>"
+                                >
+                                    <div class="feed-manage-details">
+                                        <h3>
+                                            <?= e(
+                                                $managedPost['Title']
+                                            ) ?>
+                                        </h3>
+
+                                        <p>
+                                            <?= e(
+                                                $managedPost['ClubName']
+                                            ) ?>
+                                            <span aria-hidden="true">•</span>
+                                            <?= e($managedDate) ?>
+                                        </p>
+                                    </div>
+
+                                    <button
+                                        type="button"
+                                        class="archive-post-btn"
+                                        data-post-id="<?= $managedPostID ?>"
+                                        data-post-title="<?= e(
+                                            $managedPost['Title']
+                                        ) ?>"
+                                    >
+                                        Archive
+                                    </button>
+                                </article>
+                            <?php endwhile; ?>
+                        <?php endif; ?>
+
+                        <?php $postListStatement->close(); ?>
+                    </div>
+                </section>
             </div>
         </div>
     </div>
@@ -364,6 +551,13 @@ if ($SignedIn) {
     const mobileMenu = document.querySelector('.mobile-menu');
     const mobileNav = document.querySelector('.tnb-mobile-nav');
     const closeNav = document.querySelector('.tnb-close-btn');
+
+    const feedPostForm = document.getElementById('feed-post-form');
+    const feedClubID = document.getElementById('feed-club-id');
+    const feedPostStatus = document.getElementById('feed-post-status');
+    const publishPostBtn = document.getElementById('publish-post-btn');
+    const feedManageList = document.getElementById('feed-manage-list');
+    const feedManageStatus = document.getElementById('feed-manage-status');
 
     mobileMenu.addEventListener('click', () => {
         const state = mobileMenu.getAttribute('data-state');
@@ -567,4 +761,175 @@ if ($SignedIn) {
             console.error('Error updating club information:', error);
         }
     }
+
+    async function refreshFeedManagementList() {
+        const response = await fetch(window.location.href, {
+            method: 'GET',
+            credentials: 'same-origin',
+            cache: 'no-store'
+        });
+
+        if (!response.ok) {
+            throw new Error('The management list could not be refreshed.');
+        }
+
+        const pageHTML = await response.text();
+
+        const parsedPage = new DOMParser().parseFromString(
+            pageHTML,
+            'text/html'
+        );
+
+        const refreshedList = parsedPage.getElementById(
+            'feed-manage-list'
+        );
+
+        if (!refreshedList) {
+            throw new Error('The refreshed management list was not found.');
+        }
+
+        feedManageList.innerHTML = refreshedList.innerHTML;
+    }
+
+    feedPostForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        const selectedClub = clubOptions.options[clubOptions.selectedIndex];
+
+        if (!selectedClub) {
+            feedPostStatus.textContent = 'Select a club before publishing.';
+            return;
+        }
+
+        const selectedClubID = selectedClub.dataset.clubId;
+
+        if (!selectedClubID) {
+            feedPostStatus.textContent = 'The selected club is invalid.';
+            return;
+        }
+
+        feedClubID.value = selectedClubID;
+        feedPostStatus.textContent = 'Publishing...';
+        publishPostBtn.disabled = true;
+
+        const formData = new FormData(feedPostForm);
+
+        try {
+            const response = await fetch('../feed/create_post.php', {
+                method: 'POST',
+                body: formData
+            });
+
+            let result;
+
+            try {
+                result = await response.json();
+            } catch {
+                throw new Error('The server returned an invalid response.');
+            }
+
+            if (!response.ok || !result.success) {
+                throw new Error(
+                    result.message || 'The post could not be published.'
+                );
+            }
+
+            feedPostForm.reset();
+
+            try {
+                await refreshFeedManagementList();
+
+                feedPostStatus.textContent =
+                    `Post published successfully for ${result.clubName}.`;
+            } catch (refreshError) {
+                console.error(refreshError);
+
+                feedPostStatus.textContent =
+                    `Post published successfully for ${result.clubName}, ` +
+                    'but the management list could not refresh. ' +
+                    'Refresh the page to see the new post.';
+            }
+        } catch (error) {
+            feedPostStatus.textContent =
+                error.message || 'The post could not be published.';
+        } finally {
+            publishPostBtn.disabled = false;
+        }
+    });
+
+    feedManageList.addEventListener('click', async (event) => {
+        const archiveButton = event.target.closest('.archive-post-btn');
+
+        if (!archiveButton) {
+            return;
+        }
+
+        const postID = archiveButton.dataset.postId;
+        const postTitle = archiveButton.dataset.postTitle;
+
+        const confirmed = confirm(
+            `Archive "${postTitle}"?\n\n` +
+            'The post will no longer appear in the feed.'
+        );
+
+        if (!confirmed) {
+            return;
+        }
+
+        archiveButton.disabled = true;
+        archiveButton.textContent = 'Archiving...';
+        feedManageStatus.textContent = '';
+
+        const formData = new FormData();
+        formData.append('PostID', postID);
+
+        try {
+            const response = await fetch('../feed/archive_post.php', {
+                method: 'POST',
+                body: formData
+            });
+
+            let result;
+
+            try {
+                result = await response.json();
+            } catch {
+                throw new Error('The server returned an invalid response.');
+            }
+
+            if (!response.ok || !result.success) {
+                throw new Error(
+                    result.message || 'The post could not be archived.'
+                );
+            }
+
+            const postItem = archiveButton.closest('.feed-manage-item');
+
+            if (postItem) {
+                postItem.remove();
+            }
+
+            feedManageStatus.textContent = result.message;
+
+            const remainingPosts = feedManageList.querySelectorAll(
+                '.feed-manage-item'
+            );
+
+            if (remainingPosts.length === 0) {
+                const emptyState = document.createElement('div');
+                emptyState.className = 'feed-manage-empty';
+                emptyState.dataset.feedEmpty = '';
+                emptyState.textContent =
+                    'You do not have any active posts.';
+
+                feedManageList.appendChild(emptyState);
+            }
+        } catch (error) {
+            feedManageStatus.textContent =
+                error.message || 'The post could not be archived.';
+
+            archiveButton.disabled = false;
+            archiveButton.textContent = 'Archive';
+        }
+    });
 </script>

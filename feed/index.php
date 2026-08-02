@@ -21,17 +21,37 @@ if ($conn->connect_error) {
     http_response_code(500);
     exit('Database connection failed.');
 }
-$email = $user['Email'];
-$stmt = $conn->prepare("SELECT Role, AdminFlag FROM users WHERE Email = ?");
-$stmt->bind_param("s", $email);
-$stmt->execute();
-$result = $stmt->get_result();
-$row = $result->fetch_assoc();
-$role = $row['Role'];
-$admin = $row['AdminFlag'];
 
 if (!$SignedIn) {
     header('Location: ../index.php');
+    exit;
+}
+
+$email = (string) $user['Email'];
+
+$stmt = $conn->prepare(
+    "SELECT Role, AdminFlag FROM users WHERE Email = ?"
+);
+$stmt->bind_param("s", $email);
+$stmt->execute();
+
+$result = $stmt->get_result();
+$row = $result->fetch_assoc();
+
+$role = $row['Role'] ?? 'user';
+$admin = $row['AdminFlag'] ?? 0;
+
+$stmt->close();
+$feedView = $_GET['view'] ?? null;
+
+if (!in_array($feedView, ['all', 'for-you'], true)) {
+    $feedDirectory = rtrim(
+        dirname($_SERVER['SCRIPT_NAME']),
+        '/'
+    );
+
+    header('Location: ' . $feedDirectory . '/?view=all');
+    exit;
 }
 ?>
 <!DOCTYPE html>
@@ -171,7 +191,222 @@ if (!$SignedIn) {
 </div>
 <div class="background-image"></div>
 <div class="contentcontainer">
+ <div class="belowtopnavcontainer">
+        <main class="sis-main feed-page" id="main">
+            <section class="feed-hero">
+                <div class="feed-hero-content">
+                    <h1>Club Activity Feed</h1>
+                    <p>
+                        <?php if ($feedView === 'for-you'): ?>
+                            Updates from clubs you are a member of.
+                        <?php else: ?>
+                            Stay updated with the latest from all SIS clubs.
+                        <?php endif; ?>
+                    </p>
+                </div>
+            </section>
 
+            <section class="feed-content">
+                <nav class="feed-tabs" aria-label="Feed sections">
+                    <a
+                        class="feed-tab <?= $feedView === 'all' ? 'active' : '' ?>"
+                        href="?view=all"
+                        <?= $feedView === 'all' ? 'aria-current="page"' : '' ?>
+                    >
+                        All Posts
+                    </a>
+
+                    <a
+                        class="feed-tab <?= $feedView === 'for-you' ? 'active' : '' ?>"
+                        href="?view=for-you"
+                        <?= $feedView === 'for-you'
+                            ? 'aria-current="page"'
+                            : '' ?>
+                    >
+                        For You
+                    </a>
+                </nav>
+
+                <div class="feed-post-list">
+                    <?php
+                    $membershipFilter = '';
+
+                    if ($feedView === 'for-you') {
+                        $membershipFilter = "
+                            AND EXISTS (
+                                SELECT 1
+                                FROM users
+                                WHERE users.Email = ?
+                                AND FIND_IN_SET(
+                                        CAST(feed.ClubID AS CHAR),
+                                        REPLACE(
+                                            COALESCE(users.MemberOf, ''),
+                                            ' ',
+                                            ''
+                                        )
+                                ) > 0
+                            )
+                        ";
+                    }
+
+                    $feedSql = "
+                        SELECT
+                            feed.PostID,
+                            feed.ClubID,
+                            feed.UploadTime,
+                            feed.Title,
+                            feed.Description,
+                            feed.ImageID,
+                            clubs.Name AS ClubName,
+                            clubs.DirName
+                        FROM feed
+                        INNER JOIN clubs
+                            ON clubs.ClubID = feed.ClubID
+                        WHERE feed.Visible = 1
+                        $membershipFilter
+                        ORDER BY
+                            feed.UploadTime DESC,
+                            feed.PostID DESC
+                    ";
+
+                    $feedStatement = $conn->prepare($feedSql);
+
+                    if (!$feedStatement) {
+                        $feedResult = false;
+                    } else {
+                        if ($feedView === 'for-you') {
+                            $feedStatement->bind_param('s', $email);
+                        }
+
+                        if (!$feedStatement->execute()) {
+                            $feedResult = false;
+                        } else {
+                            $feedResult = $feedStatement->get_result();
+                        }
+                    }
+
+                    if (!$feedResult): ?>
+                        <div class="feed-empty-state">
+                            <h2>Unable to load posts</h2>
+                            <p>Please refresh the page and try again.</p>
+                        </div>
+
+                    <?php elseif ($feedResult->num_rows === 0): ?>
+                        <div class="feed-empty-state">
+                            <h2>No posts yet</h2>
+                            <p>
+                                Club announcements will appear here once
+                                executives publish them.
+                            </p>
+                        </div>
+
+                    <?php else: ?>
+                        <?php while ($post = $feedResult->fetch_assoc()): ?>
+                            <?php
+                            $postID = (int) $post['PostID'];
+                            $imageID = $post['ImageID'] !== null
+                                ? (int) $post['ImageID']
+                                : null;
+
+                            $dirName = basename(
+                                (string) ($post['DirName'] ?? '')
+                            );
+
+                            $bannerFile = __DIR__
+                                . '/../assets/banners/'
+                                . $dirName
+                                . '.png';
+
+                            if ($dirName !== '' && is_file($bannerFile)) {
+                                $clubImageUrl = '../assets/banners/'
+                                    . rawurlencode($dirName)
+                                    . '.png';
+                            } else {
+                                $clubImageUrl =
+                                    '../assets/site_images/SIS%20Logo.svg';
+                            }
+
+                            $postImageFile = $imageID !== null
+                                ? __DIR__
+                                    . '/../assets/feed/'
+                                    . $imageID
+                                    . '.png'
+                                : null;
+
+                            $hasPostImage = $postImageFile !== null
+                                && is_file($postImageFile);
+
+                            $uploadTimestamp = strtotime(
+                                (string) $post['UploadTime']
+                            );
+
+                            $displayDate = $uploadTimestamp !== false
+                                ? date('M j, Y', $uploadTimestamp)
+                                : 'Unknown date';
+
+                            $dateTimeValue = $uploadTimestamp !== false
+                                ? date(DATE_ATOM, $uploadTimestamp)
+                                : '';
+                            ?>
+
+                            <article
+                                class="feed-post-card"
+                                data-post-id="<?= $postID ?>"
+                            >
+                                <header class="feed-post-header">
+                                    <img
+                                        class="feed-club-avatar"
+                                        src="<?= e($clubImageUrl) ?>"
+                                        alt="<?= e($post['ClubName']) ?> logo"
+                                        loading="lazy"
+                                    >
+
+                                    <div class="feed-post-identity">
+                                        <h2>
+                                            <?= e($post['ClubName']) ?>
+                                        </h2>
+
+                                        <time
+                                            datetime="<?= e($dateTimeValue) ?>"
+                                        >
+                                            <?= e($displayDate) ?>
+                                        </time>
+                                    </div>
+                                </header>
+
+                                <div class="feed-post-body">
+                                    <h3><?= e($post['Title']) ?></h3>
+
+                                    <p>
+                                        <?= nl2br(
+                                            e($post['Description'])
+                                        ) ?>
+                                    </p>
+                                </div>
+
+                                <?php if ($hasPostImage): ?>
+                                    <div class="feed-post-image-container">
+                                        <img
+                                            class="feed-post-image"
+                                            src="../assets/feed/<?= $imageID ?>.png"
+                                            alt="<?= e($post['Title']) ?>"
+                                            loading="lazy"
+                                        >
+                                    </div>
+                                <?php endif; ?>
+                            </article>
+                        <?php endwhile; ?>
+                    <?php endif; ?>
+
+                    <?php
+                    if ($feedStatement) {
+                        $feedStatement->close();
+                    }
+                    ?>
+                </div>
+            </section>
+        </main>
+    </div>
 </div>
 <div class ="wrappercontainer">
     <div class="footerwrapper">
