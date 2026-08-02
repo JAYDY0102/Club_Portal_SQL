@@ -1,0 +1,3 @@
+auth/secret.php
+assets/feed/*.png
+!assets/feed/.gitkeep
