@@ -399,23 +399,31 @@ if (!$SignedIn) {
         const eventEl = e.target.closest('.event');
         if (!eventEl) return;
 
+        const clubDir = eventEl.dataset.clubdir;
+        const exists = Array.from(clubOptions.options).some(option => option.value === clubDir);
+
         document.querySelectorAll('.event.selected').forEach(el => {
             el.classList.remove('selected');
         });
         eventEl.classList.add('selected');
 
-        eventIdInput.value = eventEl.dataset.id || '';
-        clubOptions.value = eventEl.dataset.club || 'general';
-        nameInput.value = eventEl.dataset.title || '';
-        descriptionInput.value = eventEl.dataset.description || '';
-        dateInput.value = eventEl.dataset.date || '';
+        if (exists) {
+            eventIdInput.value = eventEl.dataset.id || '';
+            clubOptions.value = clubDir || 'general';
+            nameInput.value = eventEl.dataset.name || '';
+            descriptionInput.value = eventEl.dataset.description || '';
+            dateInput.value = eventEl.dataset.date || '';
 
-        setFormMode('edit');
+            setFormMode('edit');
+        } else {
+            eventIdInput.value = '';
+            clubOptions.value = '';
+            nameInput.value = '';
+            descriptionInput.value = '';
+            dateInput.value = '';
+            setFormMode('add');
+        }
     });
-
-    clubOptions.addEventListener('change', () => {
-
-    })
 
     addBtn.addEventListener('click', async () => {
         const formData = new FormData();
@@ -550,7 +558,8 @@ if (!$SignedIn) {
             let eventsHtml = '';
             for (const event of events) {
                 eventsHtml += `<div class="event"
-                    data-club-id="${event.clubID}"
+                    data-clubdir="${event.clubDirName}"
+                    data-clubid="${event.clubID}"
                     data-date="${event.date}"
                     data-name="${event.eventName}"
                     data-description="${event.eventDescription}"

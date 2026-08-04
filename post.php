@@ -240,7 +240,7 @@ if ($RequestType == 'Banner') {
     $row = $result->fetch_assoc() ?? [];
     $memberOf = $row['MemberOf'] ?? '';
     $AdminFlag = $row['AdminFlag'] ?? '0';
-    $clubs = array_map('trim', explode(',', $memberOf));
+    $clubs = array_values(array_filter(array_map('intval', explode(',', $memberOf))));
     $stmtClubs->close();
 
     $events = [];
@@ -257,10 +257,11 @@ if ($RequestType == 'Banner') {
         $EventDescription = $row['EventDescription'];
         $Visibility = $row['Visible'];
         $ClubName = 'General';
+        $DirName = 'general';
         $executives = [];
         $advisors = [];
         if ($ClubID != 0 && $ClubID != null) {
-            $stmtClubName = $conn->prepare("SELECT Name,Executives,Advisors FROM clubs WHERE ClubID = ?");
+            $stmtClubName = $conn->prepare("SELECT Name,DirName,Executives,Advisors FROM clubs WHERE ClubID = ?");
             $stmtClubName->bind_param("i", $ClubID);
             $stmtClubName->execute();
             $resultClubName = $stmtClubName->get_result();
@@ -268,9 +269,11 @@ if ($RequestType == 'Banner') {
             $ClubName = $clubRow['Name'] ?? 'General';
             $executives = array_map('trim', explode(',', $clubRow['Executives'] ?? ''));
             $advisors = array_map('trim', explode(',', $clubRow['Advisors'] ?? ''));
+            $DirName = $clubRow['DirName'] ?? 'general';
         }
         if ($AdminFlag == '1' || $Visibility != 0 || in_array($ClubID, $clubs, true) || in_array($Requester, $executives, true) || in_array($Requester, $advisors, true)) {
             $events[] = [
+                'clubDirName' => $DirName,
                 'clubName' => $ClubName,
                 'clubID' => $ClubID,
                 'date' => substr($Date, 0, 10),
@@ -363,6 +366,39 @@ if ($RequestType == 'Banner') {
         echo "rei;Event deleted successfully!";
     } else {
         echo "shinji-01;" . $stmt->error;
+    }
+} else if ($RequestType == 'user-update') {
+
+    $ClubID = $_POST['ClubID'] ?? 0;
+    $UpdateType = $_POST['UpdateType'] ?? '';
+    $Requester = $_POST['Requester'] ?? '';
+    if ($ClubID === '' || $Requester === '') {
+        echo "shinji-01;Missing ClubID or Requester";
+        exit;
+    }
+    $stmt = $conn->prepare("SELECT MemberOf FROM users WHERE Email = ?");
+    $stmt->bind_param("s", $Requester);
+    $stmt->execute();
+    $MemberOf = $stmt->get_result()->fetch_assoc()['MemberOf'] ?? '';
+    $clubs = array_map('trim', explode(',', $MemberOf));
+    if ($UpdateType === 'Register') {
+        if (!in_array($ClubID, $clubs, true)) {
+            $clubs[] = $ClubID;
+        }
+    } else if ($UpdateType === 'Unregister') {
+        $clubs = array_filter($clubs, fn($id) => $id !== $ClubID);
+    }
+    $newMemberOf = implode(',', $clubs);
+    $stmt = $conn->prepare("UPDATE users SET MemberOf = ? WHERE Email = ?");
+    $stmt->bind_param("ss", $newMemberOf, $Requester);
+    if ($stmt->execute()) {
+        if ($UpdateType === 'Register') {
+            echo "rei;Registered to club successfully!";
+        } else {
+            echo "asuka;Unregistered from club successfully!";
+        }
+    } else {
+        echo "shinji-13;" . $stmt->error;
     }
 }
 

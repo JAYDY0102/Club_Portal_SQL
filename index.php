@@ -12,6 +12,8 @@ $dbname = $secret['dbname'];
 
 $role = null;
 $admin = null;
+$memberOf = null;
+$email = null;
 
 $conn = new mysqli($host, $username, $password, $dbname);
 if ($conn->connect_error) {
@@ -26,13 +28,14 @@ function e($value): string
 
 if ($SignedIn){
     $email = $user['Email'];
-    $stmt = $conn->prepare("SELECT Role, AdminFlag FROM users WHERE Email = ?");
+    $stmt = $conn->prepare("SELECT Role, AdminFlag, MemberOf FROM users WHERE Email = ?");
     $stmt->bind_param("s", $email);
     $stmt->execute();
     $result = $stmt->get_result();
     $row = $result->fetch_assoc();
     $role = $row['Role'];
     $admin = $row['AdminFlag'];
+    $memberOf = array_map('trim', explode(',', $row['MemberOf']));
     $stmt = $conn->prepare("SELECT Executives,Advisors FROM clubs");
     $stmt->execute();
     $result = $stmt->get_result();
@@ -341,6 +344,7 @@ if ($SignedIn){
                                 }
                                 echo "
                                 <article class='card' 
+                                data-club-id='" . e($row["ClubID"]) . "'
                                 data-dir-name='" . e($row["DirName"]) . "' 
                                 data-name='" . e($row["Name"]) . "'
                                 data-club-type='" . e($row["ClubType"]) . "'
@@ -448,6 +452,7 @@ if ($SignedIn){
     const closeNav = document.querySelector('.tnb-close-btn');
     const grid = document.querySelector('.grid');
     const mobileDrawer = document.querySelector('.mobile-drawer');
+    const signUpBtn = document.querySelectorAll('.signUpBtn');
 
     let dayFilterActive = 'all';
     let typeFilterActive = 'all';
@@ -513,6 +518,7 @@ if ($SignedIn){
 
     clubCards.forEach(card => {
         card.addEventListener('click', () => {
+            const clubID = card.getAttribute('data-club-id');
             const clubDirName = card.getAttribute('data-dir-name');
             const clubName = card.getAttribute('data-name');
             const clubType = card.getAttribute('data-club-type');
@@ -528,10 +534,15 @@ if ($SignedIn){
             const executive = card.getAttribute('data-executive');
             const signed = card.getAttribute('data-signed');
 
-            const typeTags = clubType
-                .split(',')
-                .map(type => `<span class="card-tag">${type}</span>`)
-                .join('');
+            const typeTags = `<span class="card-tag">${clubType}</span>`
+
+            let signUpBtn
+            const clubs = <?php echo json_encode($memberOf); ?>;
+            if (clubs.includes(clubID)){
+                signUpBtn = `<button class="signUpBtn" data-club-id="${clubID}">Unregister</button>`
+            } else {
+                signUpBtn = `<button class="signUpBtn" data-club-id="${clubID}">Register</button>`
+            }
 
             function makeLink(url, svgPath, altText) {
                 return`
@@ -552,6 +563,7 @@ if ($SignedIn){
                     <img class="drawer-image" src="assets/banners/${clubDirName}.png" alt="${clubName}">
                     <div class="drawer-tags">
                         ${typeTags}
+                        ${signUpBtn}
                     </div>
                 </div>
                 <button class="drawer-close" id="closeDrawer">×</button>
@@ -593,6 +605,7 @@ if ($SignedIn){
                     <img class="drawer-image" src="assets/banners/${clubDirName}.png" alt="${clubName}">
                     <div class="drawer-tags">
                         ${typeTags}
+                        ${signUpBtn}
                     </div>
                 </div>
                 <button class="drawer-close" id="closeDrawer">×</button>
@@ -648,6 +661,30 @@ if ($SignedIn){
             mobileDrawer.classList.add("mobile-drawer-open");
         })
     })
+
+    drawer.addEventListener('click', (event) => {
+        const btn = event.target.closest('.signUpBtn');
+        if (!btn) return;
+
+        console.log(btn.textContent);
+
+        const updateType = btn.textContent.trim();
+        const clubID = btn.getAttribute('data-club-id');
+
+        if (!clubID) {
+            console.error('Missing club ID on signup button');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('RequestType', 'user-update');
+        formData.append('ClubID', clubID);
+        formData.append('UpdateType', updateType);
+        formData.append('Requester', <?php echo json_encode($email); ?>);
+
+        updateUser(formData);
+    });
+
     function filterCards() {
         clubCards.forEach(card => {
             const clubType = card.getAttribute('data-club-type');
@@ -661,5 +698,23 @@ if ($SignedIn){
                 card.style.display = 'none';
             }
         })
+    }
+    async function updateUser(FormData){
+        try {
+            const response = await fetch('post.php', {
+                method: 'POST',
+                body: FormData
+            });
+            const result = await response.text();
+            const status = result.split(';');
+            if (status[0]==='rei'){
+                console.log(status[0]);
+            } else if (status[0]==='asuka'){
+                console.log(status[0]);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+        }
+        document.location.reload();
     }
 </script>
