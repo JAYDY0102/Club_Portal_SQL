@@ -354,13 +354,6 @@ if ($SignedIn) {
     const mobileNav = document.querySelector('.tnb-mobile-nav');
     const closeNav = document.querySelector('.tnb-close-btn');
 
-    const feedPostForm = document.getElementById('feed-post-form');
-    const feedClubID = document.getElementById('feed-club-id');
-    const feedPostStatus = document.getElementById('feed-post-status');
-    const publishPostBtn = document.getElementById('publish-post-btn');
-    const feedManageList = document.getElementById('feed-manage-list');
-    const feedManageStatus = document.getElementById('feed-manage-status');
-
     mobileMenu.addEventListener('click', () => {
         const state = mobileMenu.getAttribute('data-state');
         if (state === 'closed') {
