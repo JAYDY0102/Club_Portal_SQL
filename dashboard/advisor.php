@@ -4,23 +4,16 @@ session_start();
 $secret = require __DIR__ . '/../auth/secret.php';
 $SignedIn = isset($_SESSION['user']);
 $user = $_SESSION['user'] ?? null;
-
 $host = $secret['host'];
 $username = $secret['username'];
 $password = $secret['password'];
 $dbname = $secret['dbname'];
-
 $conn = new mysqli($host, $username, $password, $dbname);
 if ($conn->connect_error) {
     http_response_code(500);
     exit('Database connection failed.');
 }
-
-function e($value): string
-{
-    return htmlspecialchars(($value ?? ''), ENT_QUOTES, 'UTF-8');
-}
-
+$role = null;
 if ($SignedIn) {
     $email = $user['Email'];
     $stmt = $conn->prepare("SELECT Role FROM users WHERE Email=?");
@@ -157,7 +150,7 @@ if ($SignedIn) {
 
         for ($i = 0; $i < $repeatCount * 2; $i++) {
             foreach ($announcements as $announcement) {
-                echo "<a>" . e($announcement) . "</a>";
+                echo "<a>" . $announcement . "</a>";
             }
         }
 
@@ -186,26 +179,18 @@ if ($SignedIn) {
                                 $stmt = $conn->prepare(
                                     "SELECT ClubID, DirName, Name
                                     FROM clubs
-                                    WHERE FIND_IN_SET(
-                                        ?,
-                                        REPLACE(Advisors, ' ', '')
-                                    ) > 0
+                                    WHERE FIND_IN_SET(?, REPLACE(Advisors, ' ', '')) > 0
                                     ORDER BY Name ASC"
                                 );
-
                                 $stmt->bind_param('s', $email);
                                 $stmt->execute();
                                 $result = $stmt->get_result();
+                                if ($result->num_rows > 0) {
+                                    while ($row = $result->fetch_assoc()) {
+                                        echo "<option value='" . $row['DirName'] . "' data-club-id='" . $row['ClubID'] . "' >" . $row['Name'] . "</option>";
+                                    }
+                                }
                                 ?>
-
-                                <?php while ($row = $result->fetch_assoc()): ?>
-                                    <option
-                                        value="<?= e($row['DirName']) ?>"
-                                        data-club-id="<?= (int) $row['ClubID'] ?>"
-                                    >
-                                        <?= e($row['Name']) ?>
-                                    </option>
-                                <?php endwhile; ?>
                             </select>
                         </div>
                         <h2>Banner Preview</h2>

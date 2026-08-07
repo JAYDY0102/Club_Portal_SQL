@@ -2,31 +2,29 @@
 session_start();
 
 $secret = require __DIR__ . '/../auth/secret.php';
-$user = $_SESSION['user'] ?? null;
 $SignedIn = isset($_SESSION['user']);
-
+$user = $_SESSION['user'] ?? null;
 $host = $secret['host'];
 $username = $secret['username'];
 $password = $secret['password'];
 $dbname = $secret['dbname'];
-
-$role = null;
-$admin = null;
 $conn = new mysqli($host, $username, $password, $dbname);
 if ($conn->connect_error) {
     http_response_code(500);
     exit('Database connection failed.');
 }
-$email = $user['Email'];
-$stmt = $conn->prepare("SELECT Role, AdminFlag FROM users WHERE Email = ?");
-$stmt->bind_param("s", $email);
-$stmt->execute();
-$result = $stmt->get_result();
-$row = $result->fetch_assoc();
-$role = $row['Role'];
-$admin = $row['AdminFlag'];
-
-if (!$SignedIn) {
+$role = null;
+$admin = null;
+if ($SignedIn) {
+    $email = $user['Email'];
+    $stmt = $conn->prepare("SELECT Role, AdminFlag FROM users WHERE Email = ?");
+    $stmt->bind_param("s", $email);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $row = $result->fetch_assoc();
+    $role = $row['Role'];
+    $admin = $row['AdminFlag'];
+} else {
     header('Location: ../index.php');
     exit;
 }
@@ -205,7 +203,7 @@ if (!$SignedIn) {
                 </div>
                 <?php if ($admin == '1' || $role == 'executive' || $role == 'advisor'): ?>
                 <div class="event-panel">
-                    <div class="calendar-section">
+                    <div class="panel-section">
                         <h2 id="event-form-heading">Event Registration</h2>
                         <div class="event-management">
                             <div class="form-group see-thru">
@@ -571,11 +569,14 @@ if (!$SignedIn) {
                 eventsHtml += `<div class="event"
                     data-clubdir="${event.clubDirName}"
                     data-clubid="${event.clubID}"
+                    data-clubname="${event.clubName}"
                     data-date="${event.date}"
+                    data-datedisplay="${event.dateDisplay}"
+                    data-timedisplay="${event.timeDisplay}"
                     data-name="${event.eventName}"
                     data-description="${event.eventDescription}"
-                    data-id="${event.eventId}">
-                    data-visible="${event.visible}"
+                    data-id="${event.eventId}"
+                    data-visible="${event.visible}">
                     ${event.eventName} (${event.clubName})
                 </div>`;
             }
@@ -605,22 +606,37 @@ if (!$SignedIn) {
     function toggleEventDetails(type, eventEl) {
         if (type === 'render'){
             upcomingSection.style.display = 'none';
-            detailsSection.style.display = 'block';
+            detailsSection.style.display = 'flex';
             const EventName = eventEl.dataset.name;
             const EventDescription = eventEl.dataset.description;
-            const EventDate = eventEl.dataset.date;
-            const EventClub = eventEl.dataset.name;
+            const EventDateDisplay = eventEl.dataset.datedisplay;
+            const EventClub = eventEl.dataset.clubname;
+            const EventTimeDisplay = eventEl.dataset.timedisplay;
+            const EventID = eventEl.dataset.id;
             detailsSection.innerHTML = `
-                <h2>${EventName}</h2>
-                <button class="close" id="closeDetails">×</button>
-                <p><strong>Club:</strong> ${EventClub}</p>
-                <p><strong>Date:</strong> ${EventDate}</p>
-                <p><strong>Description:</strong> ${EventDescription}</p>
+                <button class="close" id="closeDetails" data-id=${EventID}>×</button>
+                <div class="details-info">
+                    <h2>Event Details</h2>
+                    <p><strong>Event Name:</strong> ${EventName}</p>
+                    <p><strong>Club:</strong> ${EventClub}</p>
+                    <p><strong>Date:</strong> ${EventDateDisplay}</p>
+                    <p><strong>Time:</strong> ${EventTimeDisplay}</p>
+                    <p><strong>Description:</strong> ${EventDescription}</p>
+                </div>
             `;
         } else if (type === 'hide'){
             upcomingSection.style.display = 'block';
             detailsSection.style.display = 'none';
-
+            eventIdInput.value = '';
+            clubOptions.value = '';
+            nameInput.value = '';
+            descriptionInput.value = '';
+            dateInput.value = '';
+            visibilityInput.checked = false;
+            document.querySelectorAll('.event.selected').forEach(el => {
+                el.classList.remove('selected');
+            });
+            setFormMode('add');
         }
     }
 </script>

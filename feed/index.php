@@ -15,20 +15,16 @@ if ($conn->connect_error) {
 }
 $role = null;
 $admin = null;
-$conn = new mysqli($host, $username, $password, $dbname);
-if ($conn->connect_error) {
-    http_response_code(500);
-    exit('Database connection failed.');
-}
-$email = $user['Email'];
-$stmt = $conn->prepare("SELECT Role, AdminFlag FROM users WHERE Email = ?");
-$stmt->bind_param("s", $email);
-$stmt->execute();
-$result = $stmt->get_result();
-$row = $result->fetch_assoc();
-$role = $row['Role'];
-$admin = $row['AdminFlag'];
-if (!$SignedIn) {
+if ($SignedIn) {
+    $email = $user['Email'];
+    $stmt = $conn->prepare("SELECT Role, AdminFlag FROM users WHERE Email = ?");
+    $stmt->bind_param("s", $email);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $row = $result->fetch_assoc();
+    $role = $row['Role'];
+    $admin = $row['AdminFlag'];
+} else {
     header('Location: ../index.php');
     exit;
 }

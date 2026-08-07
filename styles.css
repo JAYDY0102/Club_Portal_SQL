@@ -1025,6 +1025,11 @@ body {
     background-size: 140% auto;
     background-position-y: 89px;
 }
+@media (max-width: 688px) {
+    .see-thru {
+        background: var(--divider);
+    }
+}
 
 .panel-section {
     background-color: var(--primary-white);
@@ -1254,12 +1259,41 @@ body {
     background-color: var(--accent-alt);
 }
 
+.announcement-selector-item {
+    border-radius: 8px;
+    padding: 5px;
+    background-color: var(--divider);
+    margin-bottom: 20px;
+}
+
+.announcement-selector-item p {
+    margin: 0;
+}
+
+.announcement-new {
+    border-radius: 8px;
+    padding: 5px;
+    background-color: var(--divider);
+    margin-bottom: 20px;
+    grid-template-columns: 1fr 1fr;
+    display: grid;
+}
+
 .calendar-panel{
     margin: 24px 0;
     display: grid;
     gap: 20px;
     grid-template-columns: 4fr 1fr;
     align-items: stretch;
+}
+
+@media (max-width: 688px) {
+    .calendar-panel {
+        grid-template-columns: 1fr;
+        display: flex;
+        flex-direction: column;
+        margin: 12px 0;
+    }
 }
 
 .calendar-section {
@@ -1269,17 +1303,34 @@ body {
     display: flex;
     flex-direction: column;
 }
+@media (max-width: 688px) {
+    .calendar-section {
+        padding: 0;
+        background-color: var(--primary-white);
+    }
+}
 
 .calendar-section h2 {
     font-size: 1.2rem;
     margin: 0 0 20px;
     font-weight: normal;
 }
+@media (max-width: 688px) {
+    .calendar-section h2 {
+        display: none
+    }
+}
 
 .calendar-group {
     border-radius: 8px;
     padding: 12px;
-    margin-bottom: 20px;
+}
+
+@media (max-width: 688px) {
+    .calendar-group {
+        padding: 2px;
+        background-color: var(--primary-white);
+    }
 }
 
 .calendar-header {
@@ -1288,12 +1339,18 @@ body {
     align-items: center;
     margin: 28px 0 40px;
 }
+@media (max-width: 688px) {
+    .calendar-header {
+        margin: 0;
+    }
+}
 
 .calendar-header h2 {
     font-size: 1.5rem;
     font-weight: 800;
     color: var(--primary-text);
     margin: 0;
+    display: block;
 }
 
 .calendar-header button {
@@ -1313,6 +1370,17 @@ body {
     grid-template-columns: repeat(7, 1fr);
     text-align: center;
     gap: 10px;
+}
+
+@media (max-width: 688px) {
+    .days-grid {
+        gap: 0;
+        background: var(--divider);
+        border-radius: 5px;
+    }
+    .weekdays-grid {
+        gap: 0;
+    }
 }
 
 .weekdays-grid {
@@ -1336,9 +1404,28 @@ body {
     overflow-y: hidden;
 }
 
+@media (max-width: 688px) {
+    .day {
+        height: 40px;
+        font-size: 8px;
+        border-radius: 3px;
+        background: var(--divider);
+        justify-content: space-between;
+    }
+}
+
 .day-today {
     border: 3px solid var(--accent);
     padding: 2px 3px;
+}
+@media (max-width: 688px) {
+    .day-today {
+        padding: 5px 6px;
+        border: none;
+    }
+    .day-today a {
+        color: var(--accent);
+    }
 }
 
 .date {
@@ -1348,11 +1435,26 @@ body {
     font-weight: 600;
 }
 
+@media (max-width: 688px) {
+    .date {
+        text-align: center;
+        font-size: 12px;
+    }
+}
+
 .events {
     display: flex;
     flex-direction: column;
     gap: 4px;
     overflow-y: auto;
+}
+
+@media (max-width: 688px) {
+    .events {
+        flex-direction: row;
+        gap: 2px;
+        justify-content: center;
+    }
 }
 
 .event {
@@ -1366,9 +1468,29 @@ body {
     text-align: left;
 }
 
+@media (max-width: 688px) {
+    .event {
+        padding: 0;
+        height: 6px;
+        width: 6px;
+        border-radius: 50%;
+        color: var(--accent);
+        background-color: var(--accent);
+    }
+}
+
 .event.selected {
     border: 2px solid var(--accent);
     padding: 2px 6px;
+}
+
+@media (max-width: 688px) {
+    .event.selected {
+        border: none;
+        padding: 0;
+        color: var(--accent-alt);
+        background-color: var(--accent-alt);
+    }
 }
 
 .event-panel {
@@ -1393,9 +1515,19 @@ body {
 .details-section {
     background-color: var(--primary-white);
     border-radius: 8px;
+    padding: 0;
     display: flex;
     flex-direction: column;
-    padding: 12px;
+}
+
+.details-info {
+    padding: 18px;
+}
+
+.details-info h2 {
+    font-size: 1.2rem;
+    margin: 0 0 20px;
+    font-weight: normal;
 }
 
 #active {

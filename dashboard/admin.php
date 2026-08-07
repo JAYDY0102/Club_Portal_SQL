@@ -4,23 +4,17 @@ session_start();
 $secret = require __DIR__ . '/../auth/secret.php';
 $SignedIn = isset($_SESSION['user']);
 $user = $_SESSION['user'] ?? null;
-
 $host = $secret['host'];
 $username = $secret['username'];
 $password = $secret['password'];
 $dbname = $secret['dbname'];
-
 $conn = new mysqli($host, $username, $password, $dbname);
 if ($conn->connect_error) {
     http_response_code(500);
     exit('Database connection failed.');
 }
-
-function e($value): string
-{
-    return htmlspecialchars(($value ?? ''), ENT_QUOTES, 'UTF-8');
-}
-
+$role = null;
+$admin = null;
 if ($SignedIn) {
     $email = $user['Email'];
     $stmt = $conn->prepare("SELECT AdminFlag FROM users WHERE Email=?");
@@ -132,7 +126,7 @@ if ($SignedIn) {
 
         for ($i = 0; $i < $repeatCount * 2; $i++) {
             foreach ($announcements as $announcement) {
-                echo "<a>" . e($announcement) . "</a>";
+                echo "<a>" . $announcement . "</a>";
             }
         }
 
@@ -159,20 +153,11 @@ if ($SignedIn) {
                             <select id="club-options" class="club-options see-thru" size="10">
                                 <option value="newentry">Add a new club...</option>
                                 <?php
-                                $sql = "SELECT ClubID, DirName, Name
-                                    FROM clubs
-                                    ORDER BY Name ASC";
+                                $sql = "SELECT ClubID, DirName, Name FROM clubs ORDER BY Name ASC";
                                 $result = $conn->query($sql);
-
-                                if (!$result) {
-                                    die("Query failed: " . $conn->error);
-                                }
                                 if ($result->num_rows > 0) {
                                     while ($row = $result->fetch_assoc()) {
-                                        echo "<option
-                                            value='" . e($row['DirName']) . "'
-                                            data-club-id='" . e($row['ClubID']) . "'
-                                        >" . e($row['Name']) . "</option>";
+                                        echo "<option value='" . $row['DirName'] . "' data-club-id='" . $row['ClubID'] . "'>" . $row['Name'] . "</option>";
                                     }
                                 }
                                 ?>
@@ -269,8 +254,29 @@ if ($SignedIn) {
                 <div class="announcement-panel">
                     <div class="panel-section">
                         <h2>Manage Announcements</h2>
-                        <div class="">
-
+                        <div class="announcement-selector">
+                            <?php
+                            $stmt = $conn->prepare("SELECT * FROM announcements");
+                            $stmt->execute();
+                            $result = $stmt->get_result();
+                            while ($row = $result->fetch_assoc()) {
+                                echo '
+                                    <div class="announcement-selector-item">
+                                        <p>' . $row['Announcement'] . '</p>
+                                        <label for="feed-remove-announcement'.$row['AnnouncementID'].'" class="feed-remove-announcement-label">
+                                            <input type="checkbox" id="feed-remove-announcement'.$row['AnnouncementID'].'" class="feed-remove-announcement" data-announcementID="' . $row['AnnouncementID'] . '">
+                                            Remove Announcement
+                                        </label>
+                                    </div>';
+                            }
+                            ?>
+                        </div>
+                        <div class="announcement-new">
+                            <label for="feed-new-announcement" style="align-self: center">New Announcement</label>
+                            <input type="text" id="feed-new-announcement" class="form-input" placeholder="Tigerclubs.org is now online!">
+                        </div>
+                        <div class="form-btn-group">
+                            <div class="form-btn" id="save-btn-announcements">Save Changes</div>
                         </div>
                     </div>
                 </div>
@@ -353,6 +359,9 @@ if ($SignedIn) {
     const mobileMenu = document.querySelector('.mobile-menu');
     const mobileNav = document.querySelector('.tnb-mobile-nav');
     const closeNav = document.querySelector('.tnb-close-btn');
+    const newAnnouncementBtn = document.getElementById('save-btn-announcements');
+    const removeAnnouncement = document.querySelectorAll('.feed-remove-announcement');
+    const newAnnouncementInput = document.getElementById('feed-new-announcement');
 
     mobileMenu.addEventListener('click', () => {
         const state = mobileMenu.getAttribute('data-state');
@@ -489,6 +498,32 @@ if ($SignedIn) {
                 club.style.display = 'none';
             }
         })
+    })
+
+    newAnnouncementBtn.addEventListener('click', async () => {
+        const formData = new FormData();
+        formData.append('RequestType', 'announcement-update');
+        formData.append('NewAnnouncement', newAnnouncementInput.value);
+        for (i = 0; i < removeAnnouncement.length; i++) {
+            if (removeAnnouncement[i].checked) {
+                formData.append('RemoveAnnouncements[]', removeAnnouncement[i].getAttribute('data-announcementID'));
+            }
+        }
+        const response = await fetch('../post.php', {
+            method: 'POST',
+            body: formData
+        })
+        const result = await response.text();
+        const status = result.split(';');
+        if (status[0] === 'rei') {
+            alert(status[1]);
+            document.location.reload();
+        } else if (status[0] === 'asuka') {
+            alert(status[1]);
+        } else {
+            console.log(status[0]);
+            console.log(status[1]);
+        }
     })
 
     function updateBannerPreview(DirName, version) {

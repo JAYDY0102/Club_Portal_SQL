@@ -275,6 +275,8 @@ if ($RequestType == 'Banner') {
                 'clubName' => $ClubName,
                 'clubID' => $ClubID,
                 'date' => substr($Date, 0, 10),
+                'dateDisplay' => date('M j, Y', strtotime($Date)),
+                'timeDisplay' => date('H:i:s', strtotime($Date)),
                 'eventName' => $EventName,
                 'eventDescription' => $EventDescription,
                 'eventId' => $EventID,
@@ -583,6 +585,51 @@ if ($RequestType == 'Banner') {
         echo "rei;Post deleted successfully!";
     } else {
         echo "shinji-01;" . $stmt->error;
+    }
+} else if ($RequestType == 'announcement-update'){
+    $NewAnnouncement = $_POST['NewAnnouncement'] ?? '';
+    $RemoveAnnouncement = $_POST['RemoveAnnouncements'] ?? [];
+    if (!is_array($RemoveAnnouncement)) {
+        $RemoveAnnouncement = [$RemoveAnnouncement];
+    }
+    $RemoveAnnouncement = array_map('intval', $RemoveAnnouncement);
+    $messages = [];
+    if (!empty($RemoveAnnouncement)) {
+        $placeholders = implode(',', array_fill(0, count($RemoveAnnouncement), '?'));
+        $stmt = $conn->prepare("DELETE FROM announcements WHERE AnnouncementID IN ($placeholders)");
+        if (!$stmt) {
+            echo "shinji-13;" . $conn->error;
+            exit;
+        }
+        $types = str_repeat('i', count($RemoveAnnouncement));
+        $stmt->bind_param($types, ...$RemoveAnnouncement);
+        if ($stmt->execute()) {
+            $messages[] = "removed";
+        } else {
+            echo "shinji-13;" . $stmt->error;
+            exit;
+        }
+        $stmt->close();
+    }
+    if ($NewAnnouncement !== '') {
+        $stmtadd = $conn->prepare("INSERT INTO announcements(Announcement) VALUES (?)");
+        if (!$stmtadd) {
+            echo "shinji-13;" . $conn->error;
+            exit;
+        }
+        $stmtadd->bind_param("s", $NewAnnouncement);
+        if ($stmtadd->execute()) {
+            $messages[] = "added";
+        } else {
+            echo "shinji-01;" . $stmtadd->error;
+            exit;
+        }
+        $stmtadd->close();
+    }
+    if (empty($messages)) {
+        echo "asuka;No announcement changes submitted.";
+    } else {
+        echo "rei;Announcement update successful!";
     }
 }
 

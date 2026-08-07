@@ -4,23 +4,19 @@ session_start();
 $secret = require __DIR__ . '/auth/secret.php';
 $SignedIn = isset($_SESSION['user']);
 $user = $_SESSION['user'] ?? null;
-
 $host = $secret['host'];
 $username = $secret['username'];
 $password = $secret['password'];
 $dbname = $secret['dbname'];
-
 $role = null;
 $admin = null;
 $memberOf = null;
 $email = null;
-
 $conn = new mysqli($host, $username, $password, $dbname);
 if ($conn->connect_error) {
     http_response_code(500);
     exit('Database connection failed.');
 }
-
 if ($SignedIn){
     $email = $user['Email'];
     $stmt = $conn->prepare("SELECT Role, AdminFlag, MemberOf FROM users WHERE Email = ?");
