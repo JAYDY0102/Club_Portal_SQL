@@ -286,6 +286,67 @@ if ($RequestType == 'Banner') {
     }
     header('Content-Type: application/json');
     echo json_encode($events);
+} else if ($RequestType == 'upcoming-fetch'){
+    $Requester = $_POST['Requester'] ?? '';
+    $Date = new DateTime('now');
+    $TimeEnd = new DateTime('now');
+    $TimeEnd->modify('+7 days');
+    $Date = $Date->format('Y-m-d H:i:s');
+    $TimeEnd = $TimeEnd->format('Y-m-d H:i:s');
+    $stmtClubs = $conn->prepare("SELECT MemberOf,AdminFlag FROM users WHERE Email = ?");
+    $stmtClubs->bind_param("s", $Requester);
+    $stmtClubs->execute();
+    $result = $stmtClubs->get_result();
+    $row = $result->fetch_assoc() ?? [];
+    $memberOf = $row['MemberOf'] ?? '';
+    $AdminFlag = $row['AdminFlag'] ?? '0';
+    $clubs = array_values(array_filter(array_map('intval', explode(',', $memberOf))));
+    $stmtClubs->close();
+    $events = [];
+
+    $stmt = $conn->prepare("SELECT * FROM calendar WHERE Date BETWEEN ? AND ? ORDER BY Date DESC");
+    $stmt->bind_param("ss", $Date, $TimeEnd);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    while ($row = $result->fetch_assoc()) {
+        $ClubID = $row['ClubID'];
+        $EventID = $row['EventID'];
+        $Date = $row['Date'];
+        $EventName = $row['EventName'];
+        $EventDescription = $row['EventDescription'];
+        $Visibility = $row['Visible'];
+        $ClubName = 'General';
+        $DirName = 'general';
+        $executives = [];
+        $advisors = [];
+        if ($ClubID != 0 && $ClubID != null) {
+            $stmtClubName = $conn->prepare("SELECT Name,DirName,Executives,Advisors FROM clubs WHERE ClubID = ?");
+            $stmtClubName->bind_param("i", $ClubID);
+            $stmtClubName->execute();
+            $resultClubName = $stmtClubName->get_result();
+            $clubRow = $resultClubName->fetch_assoc();
+            $ClubName = $clubRow['Name'] ?? 'General';
+            $executives = array_map('trim', explode(',', $clubRow['Executives'] ?? ''));
+            $advisors = array_map('trim', explode(',', $clubRow['Advisors'] ?? ''));
+            $DirName = $clubRow['DirName'] ?? 'general';
+        }
+        if ($AdminFlag == '1' || $Visibility != 0 || in_array($ClubID, $clubs, true) || in_array($Requester, $executives, true) || in_array($Requester, $advisors, true)) {
+            $events[] = [
+                'clubDirName' => $DirName,
+                'clubName' => $ClubName,
+                'clubID' => $ClubID,
+                'date' => substr($Date, 0, 10),
+                'dateDisplay' => date('M j, Y', strtotime($Date)),
+                'timeDisplay' => date('H:i:s', strtotime($Date)),
+                'eventName' => $EventName,
+                'eventDescription' => $EventDescription,
+                'eventId' => $EventID,
+                'visible' => $Visibility
+            ];
+        }
+    }
+    header('Content-Type: application/json');
+    echo json_encode($events);
 } else if ($RequestType == 'event-add') {
     $EventName = trim($_POST['EventName'] ?? '');
     $EventDescription = trim($_POST['EventDescription'] ?? '');

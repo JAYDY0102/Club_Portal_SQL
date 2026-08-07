@@ -639,4 +639,41 @@ if ($SignedIn) {
             setFormMode('add');
         }
     }
+
+    async function fetchUpcomingEvents() {
+        const formData = new FormData();
+        formData.append('RequestType', 'upcoming-fetch');
+        formData.append('Requester', '<?php echo $email ?>');
+        const response = await fetch('../post.php', {
+            method: 'POST',
+            body: formData,
+        })
+        let events;
+        try {
+            events = await response.json();
+        } catch (error) {
+            console.error('Error parsing upcoming events:', error);
+            return;
+        }
+        if (!Array.isArray(events) || events.length === 0) {
+            upcomingSection.innerHTML += '<p>No upcoming events.</p>';
+            return;
+        }
+        for (const event of events) {
+            const EventName = event.eventName;
+            const EventDescription = event.eventDescription;
+            const EventDateDisplay = event.dateDisplay;
+            const EventClub = event.clubName;
+            const EventTimeDisplay = event.timeDisplay;
+            upcomingSection.innerHTML += `
+                <div class="upcoming-event">
+                    <h2>${EventName}</h2>
+                    <p><strong>Club:</strong> ${EventClub}</p>
+                    <p><strong>Date:</strong> ${EventDateDisplay}</p>
+                    <p><strong>Time:</strong> ${EventTimeDisplay}</p>
+                    <p><strong>Description:</strong> ${EventDescription}</p>
+                </div>`;
+        }
+    }
+    fetchUpcomingEvents();
 </script>

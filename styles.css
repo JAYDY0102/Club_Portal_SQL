@@ -1530,6 +1530,12 @@ body {
     font-weight: normal;
 }
 
+.upcoming-event {
+    background-color: var(--divider);
+    border-radius: 8px;
+    padding: 18px;
+}
+
 #active {
     font-weight: 600;
     color: var(--accent);
