@@ -34,7 +34,7 @@ if (!$postID || !$dirName) {
     header('Location: ../feed');
     exit;
 }
-$stmt = $conn->prepare("SELECT executives,advisors FROM clubs WHERE DirName = ?");
+$stmt = $conn->prepare("SELECT Executives,Advisors FROM clubs WHERE DirName = ?");
 $stmt->bind_param("s", $dirName);
 $stmt->execute();
 $result = $stmt->get_result();

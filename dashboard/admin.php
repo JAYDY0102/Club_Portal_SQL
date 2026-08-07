@@ -13,7 +13,6 @@ if ($conn->connect_error) {
     http_response_code(500);
     exit('Database connection failed.');
 }
-$role = null;
 $admin = null;
 if ($SignedIn) {
     $email = $user['Email'];
@@ -22,13 +21,12 @@ if ($SignedIn) {
     $stmt->execute();
     $result = $stmt->get_result();
     $row = $result->fetch_assoc();
-    $role = $row['Role'];
     $admin = $row['AdminFlag'];
     if ($admin != 1) {
         header('Location: ../index.php');
         exit;
     }
-    echo "<script>console.log('User role: $role, AdminFlag: $admin');</script>";
+    echo "<script>console.log('AdminFlag: $admin');</script>";
 } else {
     header('Location: ../index.php');
     exit;

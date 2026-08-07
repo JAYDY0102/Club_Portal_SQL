@@ -320,6 +320,7 @@ if ($SignedIn) {
             const status = result.split(';');
             console.log(status[0]);
             alert(status[1] ?? result);
+            window.location.href = '../feed';
         } catch (error) {
             addButton.disabled = false;
             console.error(error);

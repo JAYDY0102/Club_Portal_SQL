@@ -52,7 +52,7 @@ if ($SignedIn){
     $stmt = $conn->prepare("UPDATE users SET role = ? WHERE Email = ?");
     $stmt->bind_param("ss", $role, $email);
     $stmt->execute();
-    echo "<script>console.log('User role: $role, AdminFlag: $admin');</script>";
+    echo "<script>console.log('Signed In: $SignedIn, User role: $role, AdminFlag: $admin');</script>";
 }
 ?>
 <!DOCTYPE html>
@@ -548,7 +548,7 @@ if ($SignedIn){
             const links = [instagramLink, youtubeLink, websiteLink, socialLink].filter(link => link !== '');
 
             if (links.length === 0){
-                if (signed==='true'){
+                if (signed==='1'){
                     drawer.innerHTML = `
                 <div class="drawer-banner">
                     <img class="drawer-image" src="assets/banners/${clubDirName}.png" alt="${clubName}">
@@ -590,7 +590,7 @@ if ($SignedIn){
                 `
                 }
             } else {
-                if (signed==='true'){
+                if (signed==='1'){
                     drawer.innerHTML = `
                 <div class="drawer-banner">
                     <img class="drawer-image" src="assets/banners/${clubDirName}.png" alt="${clubName}">
