@@ -21,11 +21,6 @@ if ($conn->connect_error) {
     exit('Database connection failed.');
 }
 
-function e($value): string
-{
-    return htmlspecialchars(($value ?? ''), ENT_QUOTES, 'UTF-8');
-}
-
 if ($SignedIn){
     $email = $user['Email'];
     $stmt = $conn->prepare("SELECT Role, AdminFlag, MemberOf FROM users WHERE Email = ?");
@@ -224,7 +219,7 @@ if ($SignedIn){
 
             for ($i = 0; $i < $repeatCount * 2; $i++) {
                 foreach ($announcements as $announcement) {
-                    echo "<a>" . e($announcement) . "</a>";
+                    echo "<a>" . $announcement . "</a>";
                 }
             }
 
@@ -265,7 +260,7 @@ if ($SignedIn){
                             }
                         }
                         foreach ($uniqueClubType as $type) {
-                            echo "<button class='type-filter chip' data-filter='" . e($type) . "'>" . e($type) . "</button>";
+                            echo "<button class='type-filter chip' data-filter='" . $type . "'>" . $type . "</button>";
                         }
                         ?>
                     </div>
@@ -344,21 +339,21 @@ if ($SignedIn){
                                 }
                                 echo "
                                 <article class='card' 
-                                data-club-id='" . e($row["ClubID"]) . "'
-                                data-dir-name='" . e($row["DirName"]) . "' 
-                                data-name='" . e($row["Name"]) . "'
-                                data-club-type='" . e($row["ClubType"]) . "'
-                                data-member-count='" . e($row["MemberCount"]) . "'
-                                data-meet-day='" . e($row["MeetDay"]) . "'
-                                data-location='" . e($row["Location"]) . "'
-                                data-about='" . e($row["About"]) . "'
-                                data-instagram='" . e($row["Instagram"]) . "'
-                                data-youtube='" . e($row["Youtube"]) . "'
-                                data-website='" . e($row["Website"]) . "'
-                                data-social='" . e($row["Social"]) . "'
-                                data-signed='" . ($SignedIn ? "true" : "false") . "'
-                                data-advisors='" . e($AdvisorsList) . "'
-                                data-executive='" . e($ExecutivesList) . "'
+                                data-club-id='" . $row["ClubID"]."'
+                                data-dir-name='" . $row["DirName"]."' 
+                                data-name='" . $row["Name"]."'
+                                data-club-type='" . $row["ClubType"]. "'
+                                data-member-count='" . $row["MemberCount"]."'
+                                data-meet-day='" . $row["MeetDay"]."'
+                                data-location='" . $row["Location"]."'
+                                data-about='" . $row["About"]."'
+                                data-instagram='" . $row["Instagram"]."'
+                                data-youtube='" . $row["Youtube"]."'
+                                data-website='" . $row["Website"]."'
+                                data-social='" . $row["Social"]."'
+                                data-signed='" . $SignedIn."'
+                                data-advisors='" . $AdvisorsList."'
+                                data-executive='" . $ExecutivesList."'
                                 >
                                     <div class='card-banner'>
                                         <img class='card-image' src='assets/banners/" . $row["DirName"] . ".png' alt='" . $row["Name"] . "'>
@@ -383,7 +378,7 @@ if ($SignedIn){
                     </section>
                     <aside class="drawer">
                         <div class="drawer-banner"></div>
-                        <button class="drawer-close" id="closeDrawer">×</button>
+                        <button class="close" id="closeDrawer">×</button>
                         <div class="drawer-content"></div>
                     </aside>
                 </div>
@@ -566,7 +561,7 @@ if ($SignedIn){
                         ${signUpBtn}
                     </div>
                 </div>
-                <button class="drawer-close" id="closeDrawer">×</button>
+                <button class="close" id="closeDrawer">×</button>
                 <div class="drawer-content">
                     <h2>${clubName}</h2>
                     <p><strong>Meet Day:</strong> ${meetDay}</p>
@@ -587,7 +582,7 @@ if ($SignedIn){
                         ${typeTags}
                     </div>
                 </div>
-                <button class="drawer-close" id="closeDrawer">×</button>
+                <button class="close" id="closeDrawer">×</button>
                 <div class="drawer-content">
                     <h2>${clubName}</h2>
                     <p><strong>Meet Day:</strong> ${meetDay}</p>
@@ -608,7 +603,7 @@ if ($SignedIn){
                         ${signUpBtn}
                     </div>
                 </div>
-                <button class="drawer-close" id="closeDrawer">×</button>
+                <button class="close" id="closeDrawer">×</button>
                 <div class="drawer-content">
                     <h2>${clubName}</h2>
                     <p><strong>Meet Day:</strong> ${meetDay}</p>
@@ -636,7 +631,7 @@ if ($SignedIn){
                         ${typeTags}
                     </div>
                 </div>
-                <button class="drawer-close" id="closeDrawer">×</button>
+                <button class="close" id="closeDrawer">×</button>
                 <div class="drawer-content">
                     <h2>${clubName}</h2>
                     <p><strong>Meet Day:</strong> ${meetDay}</p>

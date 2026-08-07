@@ -266,9 +266,9 @@ if ($SignedIn) {
                         </div>
                     </div>
                 </div>
-                <div class="user-panel">
+                <div class="announcement-panel">
                     <div class="panel-section">
-                        <h2>Manage Users</h2>
+                        <h2>Manage Announcements</h2>
                         <div class="">
 
                         </div>
@@ -445,16 +445,13 @@ if ($SignedIn) {
     bannerInput.addEventListener('change', async () => {
         const DirName = clubOptions.value;
         const file = bannerInput.files[0];
-
         if (!file) {
             return;
         }
-
         const formData = new FormData();
         formData.append('RequestType', 'Banner')
         formData.append('File', file);
         formData.append('DirName', DirName);
-
         try {
             const response = await fetch('../post.php', {
                 method: 'POST',
@@ -484,7 +481,6 @@ if ($SignedIn) {
     clubSearch.addEventListener('input', () => {
         const searchTerm = clubSearch.value.toLowerCase();
         const clubOptions = document.getElementById('club-options');
-
         Array.from(clubOptions.options).forEach(club => {
             const clubName = club.textContent.toLowerCase();
             if (clubName.includes(searchTerm)) {
@@ -512,7 +508,6 @@ if ($SignedIn) {
         const formData = new FormData();
         formData.append('RequestType', 'club-fetch')
         formData.append('DirName', DirName);
-
         try {
             const response = await fetch('../post.php', {
                 method: 'POST',
@@ -606,6 +601,7 @@ if ($SignedIn) {
             console.error('Error updating club information:', error);
         }
     }
+
     async function addClub(DirName) {
         const formData = new FormData();
         formData.append('RequestType', 'club-add')

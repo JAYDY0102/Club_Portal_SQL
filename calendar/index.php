@@ -12,10 +12,6 @@ $dbname = $secret['dbname'];
 
 $role = null;
 $admin = null;
-function e($value): string
-{
-    return htmlspecialchars(($value ?? ''), ENT_QUOTES, 'UTF-8');
-}
 $conn = new mysqli($host, $username, $password, $dbname);
 if ($conn->connect_error) {
     http_response_code(500);
@@ -162,7 +158,7 @@ if (!$SignedIn) {
 
         for ($i = 0; $i < $repeatCount * 2; $i++) {
             foreach ($announcements as $announcement) {
-                echo "<a>" . e($announcement) . "</a>";
+                echo "<a>" . $announcement . "</a>";
             }
         }
 
@@ -200,8 +196,11 @@ if (!$SignedIn) {
                             <div id="days-grid" class="days-grid"></div>
                         </div>
                     </div>
-                    <div class="calendar-section">
+                    <div id="upcoming" class="calendar-section">
                         <h2>Upcoming Events</h2>
+                    </div>
+                    <div id="details" class="details-section" style="display: none">
+                        <button class="close" id="closeDetails">×</button>
                     </div>
                 </div>
                 <?php if ($admin == '1' || $role == 'executive' || $role == 'advisor'): ?>
@@ -227,7 +226,6 @@ if (!$SignedIn) {
                                             $stmt->bind_param("s", $email);
                                             $stmt->execute();
                                             $result = $stmt->get_result();
-
                                         }
                                         if (!$result) {
                                             die("Query failed: " . $conn->error);
@@ -236,8 +234,7 @@ if (!$SignedIn) {
                                             while ($row = $result->fetch_assoc()) {
                                                 echo "<option value='" . $row["DirName"] . "'>" . $row["Name"] . "</option>";
                                             }
-                                        }
-                                        ?>
+                                        } ?>
                                     </select>
                                 </div>
                             </div>
@@ -356,6 +353,9 @@ if (!$SignedIn) {
     const eventIdInput = document.getElementById('event-id');
     const clearBtn = document.getElementById('clear-btn');
     const calendarSection = document.getElementById('event-form-heading');
+    const closeDetails = document.getElementById('closeDetails');
+    const detailsSection = document.getElementById('details');
+    const upcomingSection = document.getElementById('upcoming');
 
     const state = {
         currentDate: new Date(),
@@ -385,6 +385,12 @@ if (!$SignedIn) {
         mobileNav.style.display = 'none';
     })
 
+    detailsSection.addEventListener('click', (event) => {
+        if (event.target.closest('#closeDetails')) {
+            toggleEventDetails('hide',null)
+        }
+    })
+
     prevBtn.addEventListener('click', () => {
         state.currentDate.setMonth(state.currentDate.getMonth() - 1);
         renderCalendar();
@@ -406,14 +412,14 @@ if (!$SignedIn) {
             el.classList.remove('selected');
         });
         eventEl.classList.add('selected');
-
+        toggleEventDetails('render',eventEl);
         if (exists) {
             eventIdInput.value = eventEl.dataset.id || '';
             clubOptions.value = clubDir || 'general';
             nameInput.value = eventEl.dataset.name || '';
             descriptionInput.value = eventEl.dataset.description || '';
             dateInput.value = eventEl.dataset.date || '';
-
+            visibilityInput.checked = eventEl.dataset.visible === '1';
             setFormMode('edit');
         } else {
             eventIdInput.value = '';
@@ -421,9 +427,14 @@ if (!$SignedIn) {
             nameInput.value = '';
             descriptionInput.value = '';
             dateInput.value = '';
+            visibilityInput.checked = false;
             setFormMode('add');
         }
     });
+
+    closeDetails.addEventListener('click', () => {
+        toggleEventDetails('hide',null)
+    })
 
     addBtn.addEventListener('click', async () => {
         const formData = new FormData();
@@ -564,6 +575,7 @@ if (!$SignedIn) {
                     data-name="${event.eventName}"
                     data-description="${event.eventDescription}"
                     data-id="${event.eventId}">
+                    data-visible="${event.visible}"
                     ${event.eventName} (${event.clubName})
                 </div>`;
             }
@@ -587,6 +599,28 @@ if (!$SignedIn) {
             clearBtn.style.display = 'none';
             deleteBtn.style.display = 'none';
             calendarSection.textContent = 'Event Registration';
+        }
+    }
+
+    function toggleEventDetails(type, eventEl) {
+        if (type === 'render'){
+            upcomingSection.style.display = 'none';
+            detailsSection.style.display = 'block';
+            const EventName = eventEl.dataset.name;
+            const EventDescription = eventEl.dataset.description;
+            const EventDate = eventEl.dataset.date;
+            const EventClub = eventEl.dataset.name;
+            detailsSection.innerHTML = `
+                <h2>${EventName}</h2>
+                <button class="close" id="closeDetails">×</button>
+                <p><strong>Club:</strong> ${EventClub}</p>
+                <p><strong>Date:</strong> ${EventDate}</p>
+                <p><strong>Description:</strong> ${EventDescription}</p>
+            `;
+        } else if (type === 'hide'){
+            upcomingSection.style.display = 'block';
+            detailsSection.style.display = 'none';
+
         }
     }
 </script>

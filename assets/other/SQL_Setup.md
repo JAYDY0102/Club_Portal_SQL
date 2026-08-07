@@ -57,7 +57,7 @@ CREATE TABLE feed(
     UploadTime TIMESTAMP,
     Title VARCHAR(255),
     Description VARCHAR(4095),
-    ImageID INT,
+    ImageID VARCHAR(255),
     Visible BOOLEAN DEFAULT TRUE,
     PRIMARY KEY (PostID)
 );

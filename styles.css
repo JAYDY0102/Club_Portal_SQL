@@ -709,6 +709,7 @@ body {
     background: var(--accent);
     color: var(--primary-white);
     backdrop-filter: blur(4px);
+    border: none;
 }
 
 .card-content {
@@ -781,7 +782,7 @@ body {
 }
 
 
-.drawer-close {
+.close {
     align-self: flex-end;
     border: none;
     background: transparent;
@@ -794,7 +795,7 @@ body {
     position: absolute;
 }
 
-.drawer-close:hover {
+.close:hover {
     color: var(--accent);
 }
 
@@ -1007,11 +1008,11 @@ body {
     .club-panel {
         display: flex;
         flex-direction: column;
-        margin: 0;
+        margin: 12px 0;
     }
 }
 
-.user-panel {
+.announcement-panel {
     margin: 24px 0;
     display: grid;
     gap: 20px;
@@ -1389,6 +1390,14 @@ body {
     border: none;
 }
 
+.details-section {
+    background-color: var(--primary-white);
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    padding: 12px;
+}
+
 #active {
     font-weight: 600;
     color: var(--accent);
@@ -1411,9 +1420,13 @@ body {
 }
 
 
-.feed-panel,
+.feed-panel {
+    margin: 24px 0;
+    padding: 9px 18px 18px;
+}
 .feed-form-panel {
     margin: 24px 0;
+    padding: 18px;
 }
 
 .feed-toolbar {
@@ -1437,11 +1450,12 @@ body {
     align-items: center;
     position: relative;
     padding: 0 2px;
-    color: #73798a;
-    font-size: 14px;
+    color: var(--primary-black);
+    font-size: 16px;
     font-weight: 600;
     text-decoration: none;
     cursor: pointer;
+    border-bottom: 2px solid transparent;
 }
 
 .feed-tab:hover {
@@ -1450,17 +1464,7 @@ body {
 
 .feed-tab.active {
     color: var(--accent);
-}
-
-.feed-tab.active::after {
-    content: "";
-    position: absolute;
-    height: 2px;
-    left: 0;
-    right: 0;
-    bottom: -1px;
-    border-radius: 2px;
-    background: var(--accent);
+    border-bottom: 2px solid var(--accent);
 }
 
 .feed-action-btn,
@@ -1479,14 +1483,17 @@ body {
 .feed-post-list {
     display: grid;
     gap: 20px;
+    place-content: center;
 }
 
 .feed-post-card {
     padding: 20px;
     overflow: hidden;
     box-sizing: border-box;
-    border: 1px solid var(--divider);
+    border: 2px solid var(--divider);
     border-radius: 8px;
+    width: 600px;
+    background-color: var(--divider);
 }
 
 .feed-post-header {
@@ -1504,19 +1511,6 @@ body {
     gap: 12px;
 }
 
-.feed-club-avatar {
-    width: 48px;
-    height: 48px;
-    flex: 0 0 48px;
-    display: block;
-    box-sizing: border-box;
-    object-fit: cover;
-    background: var(--primary-white);
-    border: 2px solid #ffffff;
-    border-radius: 50%;
-    box-shadow: 0 0 0 1px var(--divider);
-}
-
 .feed-post-identity {
     min-width: 0;
 }
@@ -1525,19 +1519,16 @@ body {
     margin: 0;
     overflow: hidden;
     color: var(--primary-text);
-    font-size: 15px;
+    font-size: 16px;
     font-weight: 700;
-    line-height: 1.3;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
 .feed-post-identity time {
     display: block;
-    margin-top: 3px;
-    color: #7b8292;
-    font-size: 12px;
-    line-height: 1.3;
+    color: var(--primary-black);
+    font-size: 1rem;
 }
 
 .feed-modify-btn {
@@ -1545,82 +1536,66 @@ body {
 }
 
 .feed-post-body h3 {
-    margin: 0 0 6px;
     color: var(--primary-text);
-    font-size: 17px;
+    font-size: 16px;
     font-weight: 700;
-    line-height: 1.35;
     overflow-wrap: anywhere;
+    margin: 0 0 10px;
 }
 
 .feed-post-description {
     margin: 0;
-    color: #6f7686;
-    font-size: 14px;
-    line-height: 1.55;
-    overflow-wrap: anywhere;
-    white-space: pre-line;
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 3;
-    overflow: hidden;
+    color: var(--primary-black);
+    font-size: 16px;
 }
 
-.feed-post-description.expanded {
-    display: block;
-    overflow: visible;
-}
-
-.feed-more-btn {
-    margin: 4px 0 0;
-    padding: 0;
-    border: none;
-    color: var(--accent);
-    background: transparent;
-    font: inherit;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-}
-
-.feed-more-btn:hover {
-    color: var(--accent-alt);
-}
-
-.feed-post-image-container {
-    margin-top: 18px;
+.feed-image-container {
+    position: relative;
+    margin-bottom: 20px;
     overflow: hidden;
     background: var(--divider);
     border: 1px solid var(--divider);
     border-radius: 10px;
 }
 
-.feed-post-image {
+.feed-image {
     width: 100%;
-    max-height: 360px;
-    display: block;
+    display: none;
     object-fit: contain;
-    background: #f1f2f5;
-}
-
-.feed-empty-state {
-    padding: 64px 24px;
-    text-align: center;
-    border: 1px dashed #d7dae0;
+    background: var(--primary-white);
+    border: 1px solid var(--divider);
     border-radius: 8px;
 }
 
-.feed-empty-state h2 {
-    margin: 0 0 8px;
-    color: var(--primary-text);
-    font-size: 20px;
+.feed-image:only-child {
+    display: block;
 }
 
-.feed-empty-state p {
-    max-width: 480px;
-    margin: 0 auto;
-    color: #73798a;
-    font-size: 14px;
+.prev,
+.next {
+    cursor: pointer;
+    position: absolute;
+    top: 50%;
+    width: auto;
+    margin-top: -22px;
+    padding: 16px;
+    color: var(--primary-black);
+    font-weight: bold;
+    font-size: 18px;
+    transition: 0.2s ease;
+    user-select: none;
+    text-decoration: none;
+    z-index: 1;
+}
+
+.prev {
+    left: 0;
+    border-radius: 0 3px 3px 0;
+}
+
+.next {
+    right: 0;
+    border-radius: 3px 0 0 3px;
 }
 
 .feed-form-panel textarea.form-input {
@@ -1632,57 +1607,38 @@ body {
     cursor: pointer;
 }
 
-.feed-form-status {
-    min-height: 24px;
-    margin: 14px 0;
-    color: #73798a;
-    font-size: 14px;
-}
-
 .feed-form-panel .form-btn:disabled {
     cursor: not-allowed;
     opacity: 0.6;
 }
 
-.feed-current-image {
-    margin-top: 20px;
-}
-
-.feed-current-image p {
-    margin: 0 0 8px;
-    font-size: 14px;
-    font-weight: 600;
-}
-
-.feed-current-image img {
-    width: 100%;
-    max-width: 520px;
-    max-height: 360px;
-    display: block;
-    object-fit: contain;
-    background: var(--primary-white);
-    border: 1px solid var(--divider);
+.feed-image-selector {
     border-radius: 8px;
+    overflow-y: auto;
 }
 
-.feed-remove-image {
+.image-selector-item {
     display: flex;
+    justify-content: space-between;
     align-items: center;
-    gap: 8px;
-    margin-top: 10px;
-    font-size: 14px;
+    padding: 12px;
+    border-bottom: 1px solid var(--divider);
+    cursor: pointer;
 }
 
-.visually-hidden {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
+.image-selector-item img {
+    height: 80px;
+    width: 160px;
+    object-fit: cover;
+    border-radius: 8px;
+    margin-right: 12px;
+}
+
+.image-selector-item p {
+    margin: 0;
+    color: var(--primary-text);
+    font-size: 14px;
+    line-height: 1.5;
 }
 
 @media (max-width: 688px) {
@@ -1716,6 +1672,7 @@ body {
     }
 
     .feed-post-card {
+        width: 100%;
         padding: 16px 14px;
     }
 
@@ -1725,31 +1682,21 @@ body {
         margin-bottom: 15px;
     }
 
-    .feed-club-avatar {
-        width: 42px;
-        height: 42px;
-        flex-basis: 42px;
-    }
-
     .feed-post-identity h2 {
-        font-size: 14px;
+        font-size: 16px;
     }
 
     .feed-post-body h3 {
-        font-size: 15px;
+        font-size: 16px;
     }
 
     .feed-post-description {
-        font-size: 13px;
+        font-size: 16px;
         line-height: 1.5;
     }
 
-    .feed-post-image-container {
-        margin-top: 14px;
-    }
-
-    .feed-empty-state {
-        padding: 48px 18px;
+    .feed-image-container {
+        margin-bottom: 14px;
     }
 
     .feed-form-panel .form-input {
@@ -1760,9 +1707,5 @@ body {
     .feed-form-panel .form-btn-group {
         flex-wrap: wrap;
         gap: 10px;
-    }
-
-    .feed-current-image img {
-        max-height: 260px;
     }
 }

@@ -1,134 +1,5 @@
 <?php
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
-
 session_start();
-
-function feedJsonResponse(
-    int $status,
-    bool $success,
-    string $message,
-    array $extra = []
-): never {
-    http_response_code($status);
-    header('Content-Type: application/json; charset=UTF-8');
-    echo json_encode(
-        array_merge([
-            'success' => $success,
-            'message' => $message,
-        ], $extra),
-        JSON_UNESCAPED_SLASHES
-    );
-    exit;
-}
-
-function feedTextLength(string $value): int
-{
-    return function_exists('mb_strlen')
-        ? mb_strlen($value, 'UTF-8')
-        : strlen($value);
-}
-
-function feedPrepare(mysqli $conn, string $sql): mysqli_stmt
-{
-    $statement = $conn->prepare($sql);
-
-    if (!$statement) {
-        throw new RuntimeException('Database statement preparation failed.');
-    }
-
-    return $statement;
-}
-
-function feedExecute(mysqli_stmt $statement): void
-{
-    if (!$statement->execute()) {
-        throw new RuntimeException('Database statement execution failed.');
-    }
-}
-
-function feedEmailList(string $emails): array
-{
-    return array_values(array_filter(array_map(
-        'trim',
-        explode(',', $emails)
-    )));
-}
-
-function feedCanManageClub(array $club, string $email, bool $isAdmin): bool
-{
-    if ($isAdmin) {
-        return true;
-    }
-
-    return in_array(
-        $email,
-        feedEmailList((string) ($club['Executives'] ?? '')),
-        true
-    ) || in_array(
-        $email,
-        feedEmailList((string) ($club['Advisors'] ?? '')),
-        true
-    );
-}
-
-function feedPostFields(): array
-{
-    $title = trim((string) ($_POST['Title'] ?? ''));
-    $description = trim((string) ($_POST['Description'] ?? ''));
-
-    if ($title === '') {
-        feedJsonResponse(422, false, 'A post title is required.');
-    }
-
-    if (feedTextLength($title) > 255) {
-        feedJsonResponse(422, false, 'The title must be 255 characters or fewer.');
-    }
-
-    if ($description === '') {
-        feedJsonResponse(422, false, 'A post description is required.');
-    }
-
-    if (feedTextLength($description) > 4095) {
-        feedJsonResponse(422, false, 'The description must be 4095 characters or fewer.');
-    }
-
-    return [$title, $description];
-}
-
-function feedUploadedImage(): ?array
-{
-    if (
-        !isset($_FILES['Image']) ||
-        $_FILES['Image']['error'] === UPLOAD_ERR_NO_FILE
-    ) {
-        return null;
-    }
-
-    $image = $_FILES['Image'];
-
-    if ($image['error'] !== UPLOAD_ERR_OK) {
-        feedJsonResponse(422, false, 'The image upload failed.');
-    }
-
-    if ((int) $image['size'] > 5 * 1024 * 1024) {
-        feedJsonResponse(422, false, 'The image must be 5 MB or smaller.');
-    }
-
-    $fileInformation = new finfo(FILEINFO_MIME_TYPE);
-    $mimeType = $fileInformation->file($image['tmp_name']);
-    $imageInformation = @getimagesize($image['tmp_name']);
-
-    if (
-        $mimeType !== 'image/png' ||
-        $imageInformation === false ||
-        ($imageInformation['mime'] ?? '') !== 'image/png'
-    ) {
-        feedJsonResponse(422, false, 'Only valid PNG images are allowed.');
-    }
-
-    return $image;
-}
 
 $RequestType = $_POST['RequestType'] ?? '';
 
@@ -140,14 +11,6 @@ $dbname = $secret['dbname'];
 
 $conn = new mysqli($host, $username, $password, $dbname);
 if ($conn->connect_error) {
-    if (in_array(
-        $RequestType,
-        ['feed-add', 'feed-update', 'feed-delete'],
-        true
-    )) {
-        feedJsonResponse(500, false, 'Database connection failed.');
-    }
-
     http_response_code(500);
     exit('Database connection failed.');
 }
@@ -157,359 +20,6 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     echo "Method Not Allowed";
     exit;
 }
-
-if (in_array(
-    $RequestType,
-    ['feed-add', 'feed-update', 'feed-delete'],
-    true
-)) {
-    ini_set('display_errors', '0');
-    mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
-    $sessionUser = $_SESSION['user'] ?? null;
-
-    if (!$sessionUser || empty($sessionUser['Email'])) {
-        feedJsonResponse(401, false, 'You must be signed in.');
-    }
-
-    $email = trim((string) $sessionUser['Email']);
-    try {
-        $userStatement = feedPrepare(
-            $conn,
-            'SELECT AdminFlag FROM users WHERE Email = ?'
-        );
-        $userStatement->bind_param('s', $email);
-        feedExecute($userStatement);
-        $databaseUser = $userStatement->get_result()->fetch_assoc();
-        $userStatement->close();
-
-        if (!$databaseUser) {
-            feedJsonResponse(
-                403,
-                false,
-                'Your user account could not be verified.'
-            );
-        }
-
-        $isAdmin = (int) $databaseUser['AdminFlag'] === 1;
-
-        if ($RequestType === 'feed-add') {
-            $clubID = filter_input(INPUT_POST, 'ClubID', FILTER_VALIDATE_INT);
-
-            if ($clubID === false || $clubID === null || $clubID < 1) {
-                feedJsonResponse(422, false, 'Please select a valid club.');
-            }
-
-            [$title, $description] = feedPostFields();
-            $image = feedUploadedImage();
-
-            $clubStatement = feedPrepare(
-                $conn,
-                'SELECT ClubID, Name, Executives, Advisors
-                 FROM clubs
-                 WHERE ClubID = ?'
-            );
-            $clubStatement->bind_param('i', $clubID);
-            feedExecute($clubStatement);
-            $club = $clubStatement->get_result()->fetch_assoc();
-            $clubStatement->close();
-
-            if (!$club) {
-                feedJsonResponse(404, false, 'The selected club does not exist.');
-            }
-
-            if (!feedCanManageClub($club, $email, $isAdmin)) {
-                feedJsonResponse(
-                    403,
-                    false,
-                    'You do not have permission to post for this club.'
-                );
-            }
-
-            $savedImagePath = null;
-            $conn->begin_transaction();
-
-            try {
-                $insertStatement = feedPrepare(
-                    $conn,
-                    'INSERT INTO feed (
-                        ClubID, UploadTime, Title, Description, ImageID, Visible
-                    ) VALUES (?, NOW(), ?, ?, NULL, 1)'
-                );
-                $insertStatement->bind_param(
-                    'iss',
-                    $clubID,
-                    $title,
-                    $description
-                );
-                feedExecute($insertStatement);
-                $postID = (int) $conn->insert_id;
-                $insertStatement->close();
-
-                if ($image !== null) {
-                    $uploadDirectory = __DIR__ . '/assets/feed';
-
-                    if (!is_dir($uploadDirectory) || !is_writable($uploadDirectory)) {
-                        throw new RuntimeException('The feed image directory is not writable.');
-                    }
-
-                    $savedImagePath = $uploadDirectory . '/' . $postID . '.png';
-
-                    if (!move_uploaded_file($image['tmp_name'], $savedImagePath)) {
-                        throw new RuntimeException('The image could not be saved.');
-                    }
-
-                    $imageStatement = feedPrepare(
-                        $conn,
-                        'UPDATE feed SET ImageID = ? WHERE PostID = ?'
-                    );
-                    $imageStatement->bind_param('ii', $postID, $postID);
-                    feedExecute($imageStatement);
-                    $imageStatement->close();
-                }
-
-                $conn->commit();
-            } catch (Throwable $error) {
-                $conn->rollback();
-
-                if ($savedImagePath !== null && is_file($savedImagePath)) {
-                    unlink($savedImagePath);
-                }
-
-                throw $error;
-            }
-
-            feedJsonResponse(
-                201,
-                true,
-                'Post published successfully.',
-                ['postID' => $postID]
-            );
-        }
-
-        $postID = filter_input(INPUT_POST, 'PostID', FILTER_VALIDATE_INT);
-
-        if ($postID === false || $postID === null || $postID < 1) {
-            feedJsonResponse(422, false, 'A valid post ID is required.');
-        }
-
-        $postStatement = feedPrepare(
-            $conn,
-            'SELECT
-                feed.PostID,
-                feed.ImageID,
-                clubs.ClubID,
-                clubs.Executives,
-                clubs.Advisors
-             FROM feed
-             INNER JOIN clubs ON clubs.ClubID = feed.ClubID
-             WHERE feed.PostID = ? AND feed.Visible = 1'
-        );
-        $postStatement->bind_param('i', $postID);
-        feedExecute($postStatement);
-        $post = $postStatement->get_result()->fetch_assoc();
-        $postStatement->close();
-
-        if (!$post) {
-            feedJsonResponse(404, false, 'The requested post does not exist.');
-        }
-
-        if (!feedCanManageClub($post, $email, $isAdmin)) {
-            feedJsonResponse(
-                403,
-                false,
-                'You do not have permission to manage this post.'
-            );
-        }
-
-        $imagePath = __DIR__ . '/assets/feed/' . $postID . '.png';
-
-        if ($RequestType === 'feed-delete') {
-            $conn->begin_transaction();
-
-            try {
-                $deleteStatement = feedPrepare(
-                    $conn,
-                    'DELETE FROM feed WHERE PostID = ? AND Visible = 1'
-                );
-                $deleteStatement->bind_param('i', $postID);
-                feedExecute($deleteStatement);
-
-                if ($deleteStatement->affected_rows !== 1) {
-                    throw new RuntimeException('The post was not deleted.');
-                }
-
-                $deleteStatement->close();
-                $conn->commit();
-            } catch (Throwable $error) {
-                $conn->rollback();
-                throw $error;
-            }
-
-            if (is_file($imagePath) && !unlink($imagePath)) {
-                error_log('Unable to remove feed image: ' . $imagePath);
-            }
-
-            feedJsonResponse(
-                200,
-                true,
-                'Post deleted successfully.',
-                ['postID' => $postID]
-            );
-        }
-
-        [$title, $description] = feedPostFields();
-        $replacementImage = feedUploadedImage();
-        $removeImage = ($_POST['RemoveImage'] ?? '') === '1';
-
-        if ($replacementImage !== null && $removeImage) {
-            feedJsonResponse(
-                422,
-                false,
-                'Choose either a replacement image or remove the current image.'
-            );
-        }
-
-        $uploadDirectory = __DIR__ . '/assets/feed';
-        $temporaryImagePath = null;
-        $backupImagePath = null;
-        $fileChangesApplied = false;
-
-        if ($replacementImage !== null) {
-            if (!is_dir($uploadDirectory) || !is_writable($uploadDirectory)) {
-                throw new RuntimeException('The feed image directory is not writable.');
-            }
-
-            $temporaryImagePath = $uploadDirectory
-                . '/.upload-'
-                . bin2hex(random_bytes(12));
-
-            if (!move_uploaded_file(
-                $replacementImage['tmp_name'],
-                $temporaryImagePath
-            )) {
-                throw new RuntimeException('The replacement image could not be staged.');
-            }
-        }
-
-        if (($replacementImage !== null || $removeImage) && is_file($imagePath)) {
-            $backupImagePath = $uploadDirectory
-                . '/.backup-'
-                . $postID
-                . '-'
-                . bin2hex(random_bytes(8));
-
-            if (!rename($imagePath, $backupImagePath)) {
-                if ($temporaryImagePath !== null && is_file($temporaryImagePath)) {
-                    unlink($temporaryImagePath);
-                }
-                throw new RuntimeException('The current image could not be staged.');
-            }
-
-            $fileChangesApplied = true;
-        }
-
-        if ($temporaryImagePath !== null && !rename($temporaryImagePath, $imagePath)) {
-            if ($backupImagePath !== null && is_file($backupImagePath)) {
-                rename($backupImagePath, $imagePath);
-            }
-            $fileChangesApplied = false;
-            throw new RuntimeException('The replacement image could not be saved.');
-        }
-
-        if ($temporaryImagePath !== null) {
-            $fileChangesApplied = true;
-        }
-
-        $newImageID = $replacementImage !== null
-            ? $postID
-            : ($removeImage ? null : $post['ImageID']);
-
-        $conn->begin_transaction();
-
-        try {
-            $updateStatement = feedPrepare(
-                $conn,
-                'UPDATE feed
-                 SET Title = ?, Description = ?, ImageID = ?
-                 WHERE PostID = ? AND Visible = 1'
-            );
-            $updateStatement->bind_param(
-                'ssii',
-                $title,
-                $description,
-                $newImageID,
-                $postID
-            );
-            feedExecute($updateStatement);
-
-            if ($updateStatement->affected_rows > 1) {
-                throw new RuntimeException('Unexpected number of posts updated.');
-            }
-
-            $updateStatement->close();
-            $conn->commit();
-        } catch (Throwable $error) {
-            $conn->rollback();
-
-            if ($replacementImage !== null && is_file($imagePath)) {
-                unlink($imagePath);
-            }
-
-            if ($backupImagePath !== null && is_file($backupImagePath)) {
-                rename($backupImagePath, $imagePath);
-            }
-
-            $fileChangesApplied = false;
-
-            throw $error;
-        }
-
-        if ($backupImagePath !== null && is_file($backupImagePath)) {
-            if (!unlink($backupImagePath)) {
-                error_log('Unable to remove feed image backup: ' . $backupImagePath);
-            }
-        }
-
-        $fileChangesApplied = false;
-
-        feedJsonResponse(
-            200,
-            true,
-            'Post saved successfully.',
-            ['postID' => $postID]
-        );
-    } catch (Throwable $error) {
-        if (
-            isset($temporaryImagePath) &&
-            $temporaryImagePath !== null &&
-            is_file($temporaryImagePath)
-        ) {
-            unlink($temporaryImagePath);
-        }
-
-        if (!empty($fileChangesApplied) && isset($imagePath)) {
-            if (
-                isset($replacementImage) &&
-                $replacementImage !== null &&
-                is_file($imagePath)
-            ) {
-                unlink($imagePath);
-            }
-
-            if (
-                isset($backupImagePath) &&
-                $backupImagePath !== null &&
-                is_file($backupImagePath)
-            ) {
-                rename($backupImagePath, $imagePath);
-            }
-        }
-
-        error_log('Feed post request failed: ' . $error->getMessage());
-        feedJsonResponse(500, false, 'The post request could not be completed.');
-    }
-}
-
 if ($RequestType == 'Banner') {
     if (!isset($_FILES['File']) || !isset($_POST['DirName'])) {
         http_response_code(400);
@@ -767,7 +277,8 @@ if ($RequestType == 'Banner') {
                 'date' => substr($Date, 0, 10),
                 'eventName' => $EventName,
                 'eventDescription' => $EventDescription,
-                'eventId' => $EventID
+                'eventId' => $EventID,
+                'visible' => $Visibility
             ];
         }
     }
@@ -782,7 +293,7 @@ if ($RequestType == 'Banner') {
 
     $ClubID = null;
 
-    if ($DirName !== 'general' && $DirName !== 'General' && $DirName !== '') {
+    if ($DirName !== 'general'  && $DirName !== '') {
         $stmtClub = $conn->prepare("SELECT ClubID FROM clubs WHERE DirName = ?");
         $stmtClub->bind_param("s", $DirName);
         $stmtClub->execute();
@@ -816,7 +327,7 @@ if ($RequestType == 'Banner') {
 
     $ClubID = null;
 
-    if ($DirName !== 'general' && $DirName !== 'General' && $DirName !== '') {
+    if ($DirName !== 'general' && $DirName !== '') {
         $stmtClub = $conn->prepare("SELECT ClubID FROM clubs WHERE DirName = ?");
         $stmtClub->bind_param("s", $DirName);
         $stmtClub->execute();
@@ -887,6 +398,191 @@ if ($RequestType == 'Banner') {
         }
     } else {
         echo "shinji-13;" . $stmt->error;
+    }
+} else if ($RequestType == 'post-fetch') {
+    $Requester = $_POST['Requester'] ?? '';
+    $Type = $_POST['Type'] ?? '';
+    $stmt = $conn->prepare("SELECT AdminFlag, MemberOf FROM users WHERE Email = ?");
+    $stmt->bind_param("s", $Requester);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $row = $result->fetch_assoc() ?? [];
+    $memberOf = $row['MemberOf'] ?? '';
+    $AdminFlag = $row['AdminFlag'] ?? '0';
+    $clubs = array_values(array_filter(array_map('intval', explode(',', $memberOf))));
+    $Posts = [];
+    if ($Type === 'all-posts') {
+        $PublicPost = $conn->prepare("SELECT * FROM feed ORDER BY UploadTime DESC");
+        $PublicPost->execute();
+        $PublicPostResult = $PublicPost->get_result();
+        while ($row=$PublicPostResult->fetch_assoc()) {
+            $ClubID = $row['ClubID'];
+            $UploadTime = $row['UploadTime'];
+            $Visible = $row['Visible'];
+            $stmtClubName = $conn->prepare("SELECT DirName,Name,Executives,Advisors FROM clubs WHERE ClubID = ?");
+            $stmtClubName->bind_param("i", $ClubID);
+            $stmtClubName->execute();
+            $resultClubName = $stmtClubName->get_result();
+            $clubRow = $resultClubName->fetch_assoc();
+            $clubName = $clubRow['Name'] ?? 'General Post';
+            $dirName = $clubRow['DirName'] ?? 'general';
+            $executives = array_map('trim', explode(',', $clubRow['Executives'] ?? ''));
+            $advisors = array_map('trim', explode(',', $clubRow['Advisors'] ?? ''));
+            $canManage = false;
+            if (in_array($Requester, $executives, true) || in_array($Requester, $advisors, true) || $AdminFlag =='1' ) {
+                $canManage = true;
+            }
+            if (($Visible == 0 && in_array($ClubID, $clubs, true))|| $Visible == 1 || $AdminFlag =='1') {
+                $Posts[] = [
+                    'dirName' => $dirName,
+                    'canManage' => $canManage,
+                    'clubName' => $clubName,
+                    'dateValue' => $UploadTime,
+                    'date' => date('M j, Y', strtotime($UploadTime)),
+                    'postID' => $row['PostID'],
+                    'postTitle' => $row['Title'],
+                    'postDescription' => $row['Description'],
+                    'postImage' => $row['ImageID'],
+                ];
+            }
+        }
+    } else if ($Type === 'for-you') {
+        $PersonalizedPost = $conn->prepare("SELECT * FROM feed WHERE ClubID IN (" . implode(',', $clubs) . ") ORDER BY UploadTime DESC");
+        $PersonalizedPost->execute();
+        $PersonalizedPostResult = $PersonalizedPost->get_result();
+        while ($row=$PersonalizedPostResult->fetch_assoc()) {
+            $ClubID = $row['ClubID'];
+            $UploadTime = $row['UploadTime'];
+            $stmtClub = $conn->prepare("SELECT DirName,Name,Executives,Advisors FROM clubs WHERE ClubID = ?");
+            $stmtClub ->bind_param("i", $ClubID);
+            $stmtClub ->execute();
+            $resultClubName = $stmtClub ->get_result();
+            $clubRow = $resultClubName->fetch_assoc();
+            $clubName = $clubRow['Name'] ?? 'General Post';
+            $dirName = $clubRow['DirName'] ?? 'general';
+            $executives = array_map('trim', explode(',', $clubRow['Executives'] ?? ''));
+            $advisors = array_map('trim', explode(',', $clubRow['Advisors'] ?? ''));
+            $canManage = false;
+            if (in_array($Requester, $executives, true) || in_array($Requester, $advisors, true) || $AdminFlag =='1' ) {
+                $canManage = true;
+            }
+            $Posts[] = [
+                'canManage' => $canManage,
+                'clubName' => $clubName,
+                'clubDirName' => $dirName,
+                'dateValue' => $UploadTime,
+                'date' => date('M j, Y', strtotime($UploadTime)),
+                'postID' => $row['PostID'],
+                'postTitle' => $row['Title'],
+                'postDescription' => $row['Description'],
+                'postImage' => $row['ImageID'],
+            ];
+        }
+    }
+    header('Content-Type: application/json');
+    echo json_encode($Posts);
+} else if ($RequestType == 'post-add'){
+    $DirName = $_POST['DirName'] ?? '';
+    $PostTitle = $_POST['PostTitle'] ?? '';
+    $PostDescription = $_POST['PostDescription'] ?? '';
+    $PostVisibility = $_POST['PostVisibility'] ?? '';
+    $PostImages = $_FILES['PostImages'] ?? '';
+    $Date = new DateTime();
+    $SQLImages = '';
+    $stmtClub = $conn->prepare("SELECT ClubID FROM clubs WHERE DirName = ?");
+    $stmtClub->bind_param("s", $DirName);
+    $stmtClub->execute();
+    $clubResult = $stmtClub->get_result();
+    $clubRow = $clubResult->fetch_assoc();
+    $ClubID = $clubRow['ClubID'] ?? null;
+    if ($PostImages && isset($PostImages['name']) && is_array($PostImages['name'])) {
+        $totalImages = count($PostImages['name']);
+        $uploadDir = 'assets/feed/'.$DirName. $Date->format('YmdHis');
+        for ($i=0; $i<$totalImages; $i++) {
+            $uploadPath = $uploadDir . '_' . $i . '.png';
+            if (move_uploaded_file($PostImages['tmp_name'][$i], $uploadPath)) {
+                $SQLImages .= $uploadPath;
+                if ($i != $totalImages - 1) {
+                    $SQLImages .= ',';
+                }
+            } else {
+                http_response_code(500);
+                echo "shinji-01;Failed to upload image";
+            }
+        }
+    } else {
+        $SQLImages = null;
+    }
+    $stmt = $conn->prepare("INSERT INTO feed(ClubID, Title, Description, ImageID, UploadTime) VALUES (?, ?, ?, ?, ?)");
+    $SQLDate = $Date->format('Y-m-d H:i:s');
+    $stmt->bind_param("issss", $ClubID, $PostTitle, $PostDescription, $SQLImages, $SQLDate);
+    if ($stmt->execute()){
+        echo "rei;Post added successfully!";
+    } else {
+        echo "shinji-13;" . $stmt->error;
+    }
+} else if ($RequestType == 'post-update'){
+    $PostID = $_POST['PostID'] ?? '';
+    $Title = $_POST['Title'] ?? '';
+    $Description = $_POST['Description'] ?? '';
+    $Visible = $_POST['PostVisibility'] ?? '';
+    $PostImages = $_FILES['PostImages'] ?? '';
+    $DirName = $_POST['dirName'] ?? '';
+    $RemoveImages = $_POST['RemoveImages'] ?? '';
+    $Date = new DateTime();
+    $stmt = $conn->prepare("SELECT ImageID FROM feed WHERE PostID = ?");
+    $stmt->bind_param("i", $PostID);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $row = $result->fetch_assoc();
+    $SQLImages = $row['ImageID'] ?? '';
+    $images = [];
+    if ($SQLImages !== null && $SQLImages !== '') {
+        $images = array_map('trim', explode(',', $SQLImages));
+    }
+    if ($PostImages && isset($PostImages['name']) && is_array($PostImages['name'])) {
+        $totalImages = count($PostImages['name']);
+        $uploadDir = 'assets/feed/'.$DirName. $Date->format('YmdHis');
+        for ($i=0; $i<$totalImages; $i++) {
+            $uploadPath = $uploadDir . '_' . $i . '.png';
+            if (move_uploaded_file($PostImages['tmp_name'][$i], $uploadPath)) {
+                $images[] .= $uploadPath;
+            } else {
+                http_response_code(500);
+                echo "shinji-01;Failed to upload image";
+                exit;
+            }
+        }
+    }
+    $toRemove = [];
+    if (!empty($RemoveImages)) {
+        if (is_array($RemoveImages)) {
+            $toRemove = array_map('trim', $RemoveImages);
+        } else {
+            $toRemove = array_map('trim', explode(',', (string)$RemoveImages));
+        }
+        $toRemove = array_filter($toRemove, fn($v) => $v !== '');
+        $toRemove = array_values($toRemove);
+    }
+    if (!empty($toRemove)) {
+        $images = array_values(array_diff($images, $toRemove));
+    }
+    $SQLImages = !empty($images) ? implode(',', $images) : null;
+    $stmt = $conn->prepare("UPDATE feed SET Title = ?, Description = ?, ImageID = ?, Visible = ? WHERE PostID = ?");
+    $stmt->bind_param("ssssi", $Title, $Description, $SQLImages, $Visible, $PostID);
+    if ($stmt->execute()){
+        echo "rei;Post updated successfully!;$SQLImages;$RemoveImages[0]";
+    } else {
+        echo "shinji-01;" . $stmt->error;
+    }
+} else if ($RequestType == 'post-delete'){
+    $PostID = $_POST['PostID'] ?? '';
+    $stmt = $conn->prepare("DELETE FROM feed WHERE PostID = ?");
+    $stmt->bind_param("i", $PostID);
+    if ($stmt->execute()){
+        echo "rei;Post deleted successfully!";
+    } else {
+        echo "shinji-01;" . $stmt->error;
     }
 }
 
